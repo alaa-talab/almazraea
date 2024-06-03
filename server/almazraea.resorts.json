@@ -1,0 +1,14 @@
+[{
+  "_id": {
+    "$oid": "665c7357f7f3bc406983d6fe"
+  },
+  "name": "Sample Resort",
+  "location": "https://maps.google.com",
+  "description": "A beautiful resort.",
+  "images": [
+    "https://example.com/image1.jpg"
+  ],
+  "owner": "owner_id",
+  "price": 100,
+  "rating": 0
+}]
