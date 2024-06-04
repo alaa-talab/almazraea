@@ -1,10 +1,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import HomePage from './components/HomePage';  // Import the HomePage component
 import Register from './components/Register';
 import Login from './components/Login';
 import AddResort from './components/AddResort';
 import Resorts from './components/Resorts';
-import AdminComponent from './components/AdminComponent'; // Import the AdminComponent
+import AdminComponent from './components/AdminComponent';
 
 function App() {
   const isAuthenticated = () => !!localStorage.getItem('token');
@@ -26,7 +27,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Navigate to="/resorts" />} />
+        <Route path="/" element={<HomePage />} />  {/* Set HomePage as the root page */}
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/resorts" element={<Resorts />} />
