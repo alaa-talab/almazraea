@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const HomePage = () => {
   return (
@@ -7,20 +8,29 @@ const HomePage = () => {
       <header className="bg-white shadow">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
           <div className="text-xl font-bold">Almazraea</div>
-          <nav>
+          <nav className="flex items-center">
             <ul className="flex space-x-4">
-              <li><a href="/" className="text-gray-600 hover:text-gray-900">Home</a></li>
-              <li><a href="/resorts" className="text-gray-600 hover:text-gray-900">Resorts</a></li>
-              <li><a href="/about" className="text-gray-600 hover:text-gray-900">About</a></li>
-              <li><a href="/contact" className="text-gray-600 hover:text-gray-900">Contact</a></li>
+              <li><Link to="/" className="text-gray-600 hover:text-gray-900">Home</Link></li>
+              <li><Link to="/resorts" className="text-gray-600 hover:text-gray-900">Resorts</Link></li>
+              <li><Link to="/about" className="text-gray-600 hover:text-gray-900">About</Link></li>
+              <li><Link to="/contact" className="text-gray-600 hover:text-gray-900">Contact</Link></li>
             </ul>
+            <div className="flex items-center ml-4 space-x-4">
+              <input 
+                type="text" 
+                placeholder="Search resorts..." 
+                className="border rounded py-2 px-3"
+              />
+              <Link to="/login" className="text-gray-600 hover:text-gray-900">Login</Link>
+              <Link to="/register" className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700">Sign Up</Link>
+            </div>
           </nav>
         </div>
       </header>
 
       {/* Hero Section */}
       <section className="bg-cover bg-center h-screen" style={{ backgroundImage: "url('path/to/hero-image.jpg')" }}>
-        <div className="container mx-auto px-4 py-32 text-center text-white">
+        <div className="container mx-auto px-4 py-32 text-center text-black">
           <h1 className="text-5xl font-bold">Welcome to Almazraea</h1>
           <p className="mt-4 text-xl">Discover the best resorts</p>
         </div>
@@ -52,8 +62,8 @@ const HomePage = () => {
         <div className="container mx-auto px-4 flex justify-between items-center">
           <div>
             <ul className="flex space-x-4">
-              <li><a href="/privacy" className="hover:underline">Privacy Policy</a></li>
-              <li><a href="/terms" className="hover:underline">Terms of Service</a></li>
+              <li><Link to="/privacy" className="hover:underline">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="hover:underline">Terms of Service</Link></li>
             </ul>
           </div>
           <div className="flex space-x-4">
