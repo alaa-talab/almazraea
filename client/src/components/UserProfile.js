@@ -33,6 +33,7 @@ const UserProfile = ({ user, setUser }) => {
     };
     fetchUser();
   }, [id]);
+  
 
   const handleUpdate = async (e) => {
     e.preventDefault();

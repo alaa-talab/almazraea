@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String }, // Make password optional
   phone: { type: String },
   role: { type: String, enum: ['user', 'owner'], default: 'user' },
-  profilePicture: { type: String } // Add profile picture field
+  profilePicture: { type: String, default: 'https://res.cloudinary.com/dvcfefmys/image/upload/v1718042315/profile_avatar_Blank_User_Circles_kwxcyg.png' }
 });
 
 const User = mongoose.model('User', userSchema);

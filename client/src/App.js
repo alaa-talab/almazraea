@@ -59,7 +59,7 @@ const AppRoutes = () => {
       <Route path="/admin" element={<AdminComponent />} />
       <Route path="/user-profile/:id" element={<UserProfile user={user} setUser={setUser} />} />
       <Route path="/resorts/:id" element={<ResortDetail />} />
-      <Route path="/chat/:roomId" element={<Chat user={user} chatRoom="roomId" />} /> {/* Add Chat route */}
+      <Route path="/chat/:roomId" element={<Chat user={user} chatRoom={location.pathname.split('/').pop()} />} /> {/* Add Chat route */}
     </Routes>
   );
 };

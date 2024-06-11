@@ -11,7 +11,7 @@ const emailValidator = require('email-validator');
 const { parsePhoneNumberFromString } = require('libphonenumber-js');
 const multer = require('multer');
 const http = require('http');
-const { Server } = require('socket.io');
+const Pusher = require('pusher');
 const cloudinary = require('./cloudinaryConfig');
 const Resort = require('./models/Resort');
 const User = require('./models/User');
@@ -21,12 +21,14 @@ require('./passportConfig');
 dotenv.config();
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"]
-  }
+const server = http.createServer(app); // Create the HTTP server
+
+const pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID,
+  key: process.env.PUSHER_KEY,
+  secret: process.env.PUSHER_SECRET,
+  cluster: process.env.PUSHER_CLUSTER,
+  useTLS: true
 });
 
 app.use(express.json());
@@ -83,6 +85,7 @@ const authMiddleware = (role) => {
 const createChatRoom = async (req, res) => {
   const { recipientId } = req.body;
   try {
+    console.log(`Creating or finding chat room for user ${req.userId} and recipient ${recipientId}`);
     let chat = await Chat.findOne({
       participants: { $all: [req.userId, recipientId] }
     }).populate('participants', 'username profilePicture');
@@ -90,6 +93,7 @@ const createChatRoom = async (req, res) => {
     if (!chat) {
       chat = new Chat({ participants: [req.userId, recipientId] });
       await chat.save();
+      console.log(`Chat room created: ${chat._id}`);
     }
     res.json(chat);
   } catch (error) {
@@ -261,7 +265,6 @@ app.get('/resorts', async (req, res) => {
   }
 });
 
-
 app.get('/resorts/:id', async (req, res) => {
   try {
     const resort = await Resort.findById(req.params.id).populate('owner', 'username profilePicture');
@@ -277,7 +280,6 @@ app.get('/resorts/:id', async (req, res) => {
 
 // Create or get chat
 app.post('/chat', authMiddleware(), createChatRoom);
-
 
 // Get all chats for a user
 app.get('/user/:id/chats', authMiddleware(), async (req, res) => {
@@ -306,6 +308,20 @@ app.get('/chat/:id', authMiddleware(), validateObjectId, async (req, res) => {
   }
 });
 
+// Get chat messages
+app.get('/chat/:id/messages', authMiddleware(), validateObjectId, async (req, res) => {
+  try {
+    const chat = await Chat.findById(req.params.id).populate('messages.sender', 'username profilePicture');
+    if (!chat) {
+      return res.status(404).json({ message: 'Chat not found' });
+    }
+    res.json({ messages: chat.messages });
+  } catch (error) {
+    console.error('Error fetching chat messages:', error);
+    res.status(500).json({ message: 'An error occurred.' });
+  }
+});
+
 // Send message
 app.post('/chat/:id/message', authMiddleware(), validateObjectId, async (req, res) => {
   const { text } = req.body;
@@ -315,68 +331,17 @@ app.post('/chat/:id/message', authMiddleware(), validateObjectId, async (req, re
     if (!chat) {
       return res.status(404).json({ message: 'Chat not found' });
     }
-    chat.messages.push({ sender: req.userId, text });
+    const newMessage = { sender: req.userId, text };
+    chat.messages.push(newMessage);
     await chat.save();
+    
+    // Trigger pusher
+    pusher.trigger('chat', 'message', newMessage);
+
     res.json(chat);
   } catch (error) {
     console.error('Error sending message:', error);
-    if (error.message === 'Invalid chat room ID: roomId') {
-      return res.status(400).json({ message: 'Invalid chat room ID' });
-    } else {
-      return res.status(500).json({ message: 'An error occurred.' });
-    }
-  }
-});
-
-
-
-// Chat functionality for real-time messages
-io.on('connection', (socket) => {
-  console.log('a user connected');
-  socket.on('disconnect', () => {
-    console.log('user disconnected');
-  });
-
-  socket.on('joinRoom', ({ userId, room }) => {
-    socket.join(room);
-    console.log(`${userId} joined room: ${room}`);
-  });
-
-  socket.on('sendMessage', async ({ userId, room, message }) => {
-    const newMessage = { sender: userId, room, message };
-    const chat = await Chat.findById(room);
-    if (chat) {
-      chat.messages.push(newMessage);
-      await chat.save();
-      io.to(room).emit('receiveMessage', newMessage);
-    }
-  });
-});
-
-// Protected routes
-app.post('/resorts', authMiddleware('owner'), async (req, res) => {
-  try {
-    const resort = new Resort({ ...req.body, owner: req.userId });
-    await resort.save();
-    res.json(resort);
-  } catch (error) {
-    console.error('Error creating resort:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-app.put('/resorts/:id/rating', authMiddleware('admin'), async (req, res) => {
-  const { id } = req.params;
-  const { rating } = req.body;
-  try {
-    const resort = await Resort.findByIdAndUpdate(id, { rating }, { new: true });
-    if (!resort) {
-      return res.status(404).json({ message: 'Resort not found' });
-    }
-    res.json(resort);
-  } catch (error) {
-    console.error('Error updating rating:', error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'An error occurred.' });
   }
 });
 

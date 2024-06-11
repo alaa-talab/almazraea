@@ -38,6 +38,9 @@ const HomePage = ({ user, setUser }) => {
     setChatOpen(!chatOpen);
   };
 
+  const defaultProfilePicture = 'https://res.cloudinary.com/dvcfefmys/image/upload/v1718042315/profile_avatar_Blank_User_Circles_kwxcyg.png';
+
+
   return (
     <div className="font-arabic rtl">
       <header className="bg-white shadow">
@@ -102,7 +105,7 @@ const HomePage = ({ user, setUser }) => {
                 <div className="relative">
                   <button className="focus:outline-none">
                     <img
-                      src={user.profilePicture || 'path_to_default_profile_picture'}
+                      src={user.profilePicture || defaultProfilePicture }
                       alt="Profile"
                       className="h-8 w-8 rounded-full"
                     />
@@ -145,7 +148,7 @@ const HomePage = ({ user, setUser }) => {
             <p className="mt-4 text-xl">{resorts[0].description}</p>
             <div className="flex justify-center items-center mt-4">
               <img
-                src={resorts[0].owner.profilePicture || 'path_to_default_profile_picture'}
+                src={resorts[0].owner.profilePicture || defaultProfilePicture }
                 alt={resorts[0].owner.username}
                 className="h-8 w-8 rounded-full"
               />
@@ -171,7 +174,7 @@ const HomePage = ({ user, setUser }) => {
                 <p className="mt-2 text-gray-600">{resort.description}</p>
                 <div className="flex items-center mt-4">
                   <img
-                    src={resort.owner.profilePicture || 'path_to_default_profile_picture'}
+                    src={resort.owner.profilePicture || defaultProfilePicture }
                     alt={resort.owner.username}
                     className="h-8 w-8 rounded-full"
                   />

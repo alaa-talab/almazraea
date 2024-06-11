@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import Pusher from 'pusher-js';
 
 const ChatWindow = ({ user, onClose }) => {
   const [chats, setChats] = useState([]);
@@ -26,6 +27,31 @@ const ChatWindow = ({ user, onClose }) => {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setActiveChat(response.data);
+
+      const pusher = new Pusher('a098b5fa1f9da52f9bf0', {
+        cluster: 'us3',
+        authEndpoint: '/pusher/auth',
+        auth: {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      });
+
+      const channel = pusher.subscribe(`chat-${chatId}`);
+
+      channel.bind('new-message', (newMessage) => {
+        setActiveChat((prevChat) => ({
+          ...prevChat,
+          messages: [...prevChat.messages, newMessage]
+        }));
+      });
+
+      return () => {
+        pusher.unsubscribe(`chat-${chatId}`);
+        pusher.disconnect();
+      };
+
     } catch (error) {
       console.error('Error opening chat:', error);
     }
@@ -39,7 +65,6 @@ const ChatWindow = ({ user, onClose }) => {
       const response = await axios.post(`http://localhost:5000/chat/${activeChat._id}/message`, { text: message }, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
-      setActiveChat(response.data);
       setMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
