@@ -1,18 +1,26 @@
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-const resortSchema = new mongoose.Schema({
+const commentSchema = new Schema({
+  text: { type: String, required: true },
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const resortSchema = new Schema({
   name: { type: String, required: true },
+  phone: { type: String, required: true },
   location: { type: String, required: true },
+  locationLink: { type: String, required: true },
   description: { type: String, required: true },
   images: [String],
   videos: [String],
-  phone: { type: String, required: true },
-  locationLink: { type: String, required: true },
-  photoBanner: { type: String, required: true }, // Add this field
+  photoBanner: String,
   minPrice: { type: Number, required: true },
   maxPrice: { type: Number, required: true },
-  rating: { type: Number, default: 4 },
-  owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  rating: { type: Number, required: true },
+  owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  comments: [commentSchema]
 }, { timestamps: true });
 
 const Resort = mongoose.model('Resort', resortSchema);

@@ -2,15 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import LazyLoad from 'react-lazyload';
-import ChatWindow from './ChatWindow';
 
-const HomePage = ({ user, setUser }) => {
+const HomePage = ({ user, setUser, onLogout }) => {
   const [resorts, setResorts] = useState([]);
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
-  const [chatOpen, setChatOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [userProfilePicture, setUserProfilePicture] = useState('');
 
   useEffect(() => {
     const fetchResorts = async () => {
@@ -18,7 +18,26 @@ const HomePage = ({ user, setUser }) => {
       setResorts(response.data);
     };
     fetchResorts();
-  }, []);
+
+    const fetchUserProfilePicture = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const response = await axios.get(`http://localhost:5000/user/${user.userId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setUserProfilePicture(response.data.profilePicture);
+      } catch (error) {
+        console.error('Error fetching user profile picture:', error);
+      }
+    };
+
+    if (user) {
+      fetchUserProfilePicture();
+    }
+  }, [user]);
 
   const handleSearch = async () => {
     const response = await axios.get('http://localhost:5000/resorts', {
@@ -27,51 +46,41 @@ const HomePage = ({ user, setUser }) => {
     setResorts(response.data);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('userId');
-    setUser(null);
-  };
-
-  const toggleChat = () => {
-    setChatOpen(!chatOpen);
-  };
-
   const defaultProfilePicture = 'https://res.cloudinary.com/dvcfefmys/image/upload/v1718042315/profile_avatar_Blank_User_Circles_kwxcyg.png';
-
 
   return (
     <div className="font-arabic rtl">
       <header className="bg-white shadow">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
-          <div className="text-xl font-bold">المزرعة</div>
-          <nav className="flex items-center">
-            <ul className="flex space-x-4">
-              <li><Link to="/" className="text-gray-600 hover:text-gray-900">الصفحة الرئيسية</Link></li>
-              <li><Link to="/resorts" className="text-gray-600 hover:text-gray-900">المنتجعات</Link></li>
-              <li><Link to="/about" className="text-gray-600 hover:text-gray-900">حول</Link></li>
-              <li><Link to="/contact" className="text-gray-600 hover:text-gray-900">اتصل</Link></li>
+          <Link to="/" className="flex items-center">
+            <img src="https://res.cloudinary.com/dvcfefmys/image/upload/v1718279556/almazraea_Logo-01-removebg-preview_pokblu.png" alt="Logo" className="h-16 md:h-20 mr-4" />
+          </Link>
+          <nav className="flex items-center space-x-4">
+            <ul className="flex items-center space-x-2 md:space-x-4">
+              <li><Link to="/" className="text-pink-600 hover:text-pink-800">الصفحة الرئيسية</Link></li>
+              <li><Link to="/resorts" className="text-pink-600 hover:text-pink-800">المنتجعات</Link></li>
+              <li><Link to="/about" className="text-pink-600 hover:text-pink-800">حول</Link></li>
+              <li><Link to="/contact" className="text-pink-600 hover:text-pink-800">اتصل</Link></li>
               {user?.role === 'owner' && (
                 <li>
                   <Link to="/add-resort">
-                    <button>إضافة منتجع</button>
+                    <button className="bg-pink-600 text-white py-2 px-4 rounded hover:bg-pink-800">إضافة منتجع</button>
                   </Link>
                 </li>
               )}
             </ul>
-            <div className="flex items-center ml-4 space-x-4">
+            <div className="flex items-center space-x-2 md:space-x-4 ml-4">
               <input 
                 type="text" 
                 placeholder="اسم المنتجع..."
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="border rounded py-2 px-3"
+                className="border rounded py-2 px-3 w-20 md:w-32"
               />
               <select
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                className="border rounded py-2 px-3"
+                className="border rounded py-2 px-3 w-20 md:w-32"
               >
                 <option value="">اختر الموقع</option>
                 <option value="عمان">عمان</option>
@@ -86,54 +95,50 @@ const HomePage = ({ user, setUser }) => {
                 placeholder="الحد الأدنى للسعر"
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
-                className="border rounded py-2 px-3"
+                className="border rounded py-2 px-3 w-20 md:w-32"
               />
               <input
                 type="number"
                 placeholder="الحد الأقصى للسعر"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
-                className="border rounded py-2 px-3"
+                className="border rounded py-2 px-3 w-20 md:w-32"
               />
               <button
                 onClick={handleSearch}
-                className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700"
+                className="bg-pink-600 text-white py-2 px-4 rounded hover:bg-pink-800"
               >
                 بحث
               </button>
               {user ? (
                 <div className="relative">
-                  <button className="focus:outline-none">
+                  <button className="focus:outline-none" onClick={() => setDropdownOpen(!dropdownOpen)}>
                     <img
-                      src={user.profilePicture || defaultProfilePicture }
+                      src={userProfilePicture || defaultProfilePicture}
                       alt="Profile"
                       className="h-8 w-8 rounded-full"
                     />
                   </button>
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1">
-                    <Link to={`/user-profile/${user.userId}`} className="block px-4 py-2 text-gray-700 hover:bg-gray-100">الملف الشخصي</Link>
-                    {user.role === 'owner' && (
-                      <Link to="/add-resort" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">إضافة منتجع</Link>
-                    )}
-                    <button
-                      onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
-                    >
-                      تسجيل خروج
-                    </button>
-                    <button
-                      onClick={toggleChat}
-                      className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
-                    >
-                      دردشة
-                    </button>
-                  </div>
+                  {dropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1">
+                      <Link to={`/user-profile/${user.userId}`} className="block px-4 py-2 text-gray-700 hover:bg-gray-100">الملف الشخصي</Link>
+                      {user.role === 'owner' && (
+                        <Link to="/add-resort" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">إضافة منتجع</Link>
+                      )}
+                      <button
+                        onClick={onLogout}
+                        className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                      >
+                        تسجيل خروج
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <>
-                  <Link to="/login" className="text-gray-600 hover:text-gray-900">تسجيل الدخول</Link>
-                  <Link to="/register" className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700">التسجيل</Link>
-                </>
+                <div className="flex items-center space-x-2 md:space-x-4">
+                  <Link to="/login" className="text-pink-600 hover:text-pink-800">تسجيل الدخول</Link>
+                  <Link to="/register" className="bg-pink-600 text-white py-2 px-4 rounded hover:bg-pink-800">التسجيل</Link>
+                </div>
               )}
             </div>
           </nav>
@@ -144,17 +149,17 @@ const HomePage = ({ user, setUser }) => {
       {resorts.length > 0 && (
         <section className="bg-cover bg-center h-screen" style={{ backgroundImage: `url(${resorts[0].photoBanner})` }}>
           <div className="container mx-auto px-4 py-32 text-center text-white">
-            <h1 className="text-5xl font-bold">{resorts[0].name}</h1>
-            <p className="mt-4 text-xl">{resorts[0].description}</p>
+            <h1 className="text-3xl md:text-5xl font-bold">{resorts[0].name}</h1>
+            <p className="mt-4 text-lg md:text-xl">{resorts[0].description}</p>
             <div className="flex justify-center items-center mt-4">
               <img
-                src={resorts[0].owner.profilePicture || defaultProfilePicture }
+                src={resorts[0].owner.profilePicture || defaultProfilePicture}
                 alt={resorts[0].owner.username}
                 className="h-8 w-8 rounded-full"
               />
               <span className="ml-2">{resorts[0].owner.username}</span>
             </div>
-            <Link to={`/resorts/${resorts[0]._id}`} className="mt-4 inline-block bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700">
+            <Link to={`/resorts/${resorts[0]._id}`} className="mt-4 inline-block bg-pink-600 text-white py-2 px-4 rounded hover:bg-pink-800">
               اكتشف المزيد
             </Link>
           </div>
@@ -174,13 +179,13 @@ const HomePage = ({ user, setUser }) => {
                 <p className="mt-2 text-gray-600">{resort.description}</p>
                 <div className="flex items-center mt-4">
                   <img
-                    src={resort.owner.profilePicture || defaultProfilePicture }
+                    src={resort.owner.profilePicture || defaultProfilePicture}
                     alt={resort.owner.username}
                     className="h-8 w-8 rounded-full"
                   />
                   <span className="ml-2">{resort.owner.username}</span>
                 </div>
-                <Link to={`/resorts/${resort._id}`} className="mt-2 inline-block bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700">
+                <Link to={`/resorts/${resort._id}`} className="mt-2 inline-block bg-pink-600 text-white py-2 px-4 rounded hover:bg-pink-800">
                   اكتشف المزيد
                 </Link>
               </div>
@@ -190,9 +195,9 @@ const HomePage = ({ user, setUser }) => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-800 text-white py-8">
-        <div className="container mx-auto px-4 flex justify-between items-center">
-          <div>
+      <footer className="bg-pink-600 text-white py-8">
+        <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+          <div className="flex space-x-4 mb-4 md:mb-0">
             <ul className="flex space-x-4">
               <li><Link to="/privacy" className="hover:underline">سياسة الخصوصية</Link></li>
               <li><Link to="/terms" className="hover:underline">شروط الخدمة</Link></li>
@@ -205,8 +210,6 @@ const HomePage = ({ user, setUser }) => {
           </div>
         </div>
       </footer>
-      
-      {chatOpen && <ChatWindow user={user} onClose={toggleChat} />}
     </div>
   );
 };

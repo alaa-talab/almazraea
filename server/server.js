@@ -8,28 +8,18 @@ const passport = require('passport');
 const session = require('express-session');
 const validator = require('validator');
 const emailValidator = require('email-validator');
-const { parsePhoneNumberFromString } = require('libphonenumber-js');
 const multer = require('multer');
 const http = require('http');
-const Pusher = require('pusher');
 const cloudinary = require('./cloudinaryConfig');
 const Resort = require('./models/Resort');
 const User = require('./models/User');
-const Chat = require('./models/Chat');
+const Comment = require('./models/Comment');
 require('./passportConfig');
 
 dotenv.config();
 
 const app = express();
-const server = http.createServer(app); // Create the HTTP server
-
-const pusher = new Pusher({
-  appId: process.env.PUSHER_APP_ID,
-  key: process.env.PUSHER_KEY,
-  secret: process.env.PUSHER_SECRET,
-  cluster: process.env.PUSHER_CLUSTER,
-  useTLS: true
-});
+const server = http.createServer(app);
 
 app.use(express.json());
 app.use(cors());
@@ -80,35 +70,6 @@ const authMiddleware = (role) => {
       next();
     });
   };
-};
-
-const createChatRoom = async (req, res) => {
-  const { recipientId } = req.body;
-  try {
-    console.log(`Creating or finding chat room for user ${req.userId} and recipient ${recipientId}`);
-    let chat = await Chat.findOne({
-      participants: { $all: [req.userId, recipientId] }
-    }).populate('participants', 'username profilePicture');
-
-    if (!chat) {
-      chat = new Chat({ participants: [req.userId, recipientId] });
-      await chat.save();
-      console.log(`Chat room created: ${chat._id}`);
-    }
-    res.json(chat);
-  } catch (error) {
-    console.error('Error fetching or creating chat:', error);
-    res.status(500).json({ message: 'An error occurred.' });
-  }
-};
-
-// Middleware to validate ObjectId
-const validateObjectId = (req, res, next) => {
-  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    console.error('Invalid chat room ID:', req.params.id); // Add logging
-    return res.status(400).json({ message: 'Invalid chat room ID' });
-  }
-  next();
 };
 
 // Fetch user profile
@@ -183,7 +144,7 @@ app.post('/auth/register', async (req, res) => {
     const newUser = new User({ email, username, password: hashedPassword, phone, role });
     await newUser.save();
     const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.status(201).json({ token, role: newUser.role, userId: newUser._id }); // Include userId
+    res.status(201).json({ token, role: newUser.role, userId: newUser._id });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ message: 'An error occurred.' });
@@ -197,7 +158,7 @@ app.post('/auth/login', async (req, res) => {
     return res.status(400).json({ message: 'Invalid credentials' });
   }
   const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-  res.json({ token, role: user.role, userId: user._id }); // Include userId
+  res.json({ token, role: user.role, userId: user._id });
 });
 
 // Google OAuth routes
@@ -265,9 +226,12 @@ app.get('/resorts', async (req, res) => {
   }
 });
 
+
 app.get('/resorts/:id', async (req, res) => {
   try {
-    const resort = await Resort.findById(req.params.id).populate('owner', 'username profilePicture');
+    const resort = await Resort.findById(req.params.id)
+      .populate('owner', 'username profilePicture')
+      .populate('comments.user', 'username profilePicture');
     if (!resort) {
       return res.status(404).json({ message: 'Resort not found' });
     }
@@ -278,70 +242,137 @@ app.get('/resorts/:id', async (req, res) => {
   }
 });
 
-// Create or get chat
-app.post('/chat', authMiddleware(), createChatRoom);
-
-// Get all chats for a user
-app.get('/user/:id/chats', authMiddleware(), async (req, res) => {
+// Add resort endpoint
+app.post('/resorts', authMiddleware('owner'), async (req, res) => {
   try {
-    const chats = await Chat.find({
-      participants: req.params.id
-    }).populate('participants', 'username profilePicture');
-    res.json(chats);
+    const { name, phone, location, locationLink, description, images, videos, photoBanner, minPrice, maxPrice, rating } = req.body;
+    const newResort = new Resort({
+      name,
+      phone,
+      location,
+      locationLink,
+      description,
+      images,
+      videos,
+      photoBanner,
+      minPrice,
+      maxPrice,
+      rating,
+      owner: req.userId
+    });
+    await newResort.save();
+    res.status(201).json(newResort);
   } catch (error) {
-    console.error('Error fetching user chats:', error);
-    res.status(500).json({ message: 'An error occurred.' });
+    console.error('Error creating resort:', error);
+    res.status(500).json({ message: 'Failed to create resort.' });
   }
 });
 
-// Get chat history
-app.get('/chat/:id', authMiddleware(), validateObjectId, async (req, res) => {
+// Add a comment to a resort
+app.post('/resorts/:id/comments', authMiddleware(), async (req, res) => {
   try {
-    const chat = await Chat.findById(req.params.id).populate('messages.sender', 'username profilePicture');
-    if (!chat) {
-      return res.status(404).json({ message: 'Chat not found' });
-    }
-    res.json(chat);
-  } catch (error) {
-    console.error('Error fetching chat history:', error);
-    res.status(500).json({ message: 'An error occurred.' });
-  }
-});
+    console.log('Received request body:', req.body);
+    console.log('Received user ID from auth middleware:', req.userId);
 
-// Get chat messages
-app.get('/chat/:id/messages', authMiddleware(), validateObjectId, async (req, res) => {
-  try {
-    const chat = await Chat.findById(req.params.id).populate('messages.sender', 'username profilePicture');
-    if (!chat) {
-      return res.status(404).json({ message: 'Chat not found' });
-    }
-    res.json({ messages: chat.messages });
-  } catch (error) {
-    console.error('Error fetching chat messages:', error);
-    res.status(500).json({ message: 'An error occurred.' });
-  }
-});
+    const { text, user } = req.body;
+    const resortId = req.params.id;
 
-// Send message
-app.post('/chat/:id/message', authMiddleware(), validateObjectId, async (req, res) => {
-  const { text } = req.body;
-  try {
-    const chatRoomId = new mongoose.Types.ObjectId(req.params.id);
-    const chat = await Chat.findById(chatRoomId);
-    if (!chat) {
-      return res.status(404).json({ message: 'Chat not found' });
+    if (!text) {
+      console.error('Comment text is required');
+      return res.status(400).json({ message: 'Comment text is required' });
     }
-    const newMessage = { sender: req.userId, text };
-    chat.messages.push(newMessage);
-    await chat.save();
+
+    if (!user) {
+      console.error('User ID is required');
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    const foundUser = await User.findById(user);
+    if (!foundUser) {
+      console.error('User not found');
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const resort = await Resort.findById(resortId);
+    if (!resort) {
+      console.error('Resort not found');
+      return res.status(404).json({ message: 'Resort not found' });
+    }
+
+    // Validate and clean existing comments
+    resort.comments = resort.comments.filter(comment => comment.text && comment.user);
     
-    // Trigger pusher
-    pusher.trigger('chat', 'message', newMessage);
+    const newComment = {
+      text,
+      user
+    };
 
-    res.json(chat);
+    resort.comments.push(newComment);
+    await resort.save();
+
+    const populatedResort = await Resort.findById(resortId).populate('comments.user', 'username profilePicture');
+    res.status(201).json({ comments: populatedResort.comments });
   } catch (error) {
-    console.error('Error sending message:', error);
-    res.status(500).json({ message: 'An error occurred.' });
+    console.error('Error adding comment:', error);
+    res.status(500).json({ message: 'Failed to add comment' });
+  }
+});
+
+// Fetch comments for a resort
+app.get('/resorts/:id/comments', async (req, res) => {
+  try {
+    const resort = await Resort.findById(req.params.id).populate('comments.user', 'username profilePicture');
+    if (!resort) {
+      return res.status(404).json({ message: 'Resort not found' });
+    }
+
+    res.json(resort.comments);
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    res.status(500).json({ message: 'Failed to fetch comments.' });
+  }
+});
+
+// Fetch resorts for the logged-in owner
+app.get('/myresorts', authMiddleware('owner'), async (req, res) => {
+  try {
+    const resorts = await Resort.find({ owner: req.userId }).populate('owner', 'username profilePicture');
+    res.json(resorts);
+  } catch (error) {
+    console.error('Error fetching owner resorts:', error);
+    res.status(500).json({ message: 'Failed to fetch resorts.' });
+  }
+});
+
+// Update a resort
+app.put('/resorts/:id', authMiddleware('owner'), async (req, res) => {
+  try {
+    const resort = await Resort.findOneAndUpdate(
+      { _id: req.params.id, owner: req.userId },
+      req.body,
+      { new: true }
+    );
+    if (!resort) {
+      return res.status(404).json({ message: 'Resort not found or not owned by the user.' });
+    }
+    res.json(resort);
+  } catch (error) {
+    console.error('Error updating resort:', error);
+    res.status(500).json({ message: 'Failed to update resort.' });
+  }
+});
+
+// Delete a resort
+app.delete('/resorts/:id', authMiddleware('owner'), async (req, res) => {
+  try {
+    const resort = await Resort.findOneAndDelete({ _id: req.params.id, owner: req.userId });
+    if (!resort) {
+      return res.status(404).json({ message: 'Resort not found or not owned by the user.' });
+    }
+    res.json({ message: 'Resort deleted successfully.' });
+  } catch (error) {
+    console.error('Error deleting resort:', error);
+    res.status(500).json({ message: 'Failed to delete resort.' });
   }
 });
 

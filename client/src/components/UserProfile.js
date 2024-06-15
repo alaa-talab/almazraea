@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom'; // Removed useNavigate import
 
 const UserProfile = ({ user, setUser }) => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -16,6 +15,11 @@ const UserProfile = ({ user, setUser }) => {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem('token');
+        if (!token) {
+          setError('No token found. Please log in.');
+          setLoading(false);
+          return;
+        }
         const response = await axios.get(`http://localhost:5000/user/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`
@@ -33,12 +37,15 @@ const UserProfile = ({ user, setUser }) => {
     };
     fetchUser();
   }, [id]);
-  
 
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        setError('No token found. Please log in.');
+        return;
+      }
       const formData = new FormData();
       formData.append('username', username);
       formData.append('phone', phone);
@@ -59,8 +66,8 @@ const UserProfile = ({ user, setUser }) => {
     }
   };
 
-  const startChat = () => {
-    navigate(`/chat/${id}`);
+  const handleWhatsAppContact = () => {
+    window.location.href = `https://wa.me/${phone}`;
   };
 
   if (loading) return <p>Loading...</p>;
@@ -74,6 +81,7 @@ const UserProfile = ({ user, setUser }) => {
           <img src={profile.profilePicture || 'default_profile_picture_url'} alt={profile.username} className="h-32 w-32 rounded-full" />
           <p className="mt-4 text-xl">الاسم: {profile.username}</p>
           <p className="mt-2 text-xl">رقم الهاتف: {profile.phone}</p>
+          <p className="mt-2 text-xl">الايميل: {profile.email}</p> {/* Display email */}
           {user && user.userId === id ? (
             <form onSubmit={handleUpdate} className="mt-4 space-y-4">
               <input
@@ -100,12 +108,14 @@ const UserProfile = ({ user, setUser }) => {
               </button>
             </form>
           ) : (
-            <button
-              onClick={startChat}
-              className="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700"
-            >
-              دردشة
-            </button>
+            <div className="mt-4">
+              <button
+                onClick={handleWhatsAppContact}
+                className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-700"
+              >
+                تواصل عبر الواتساب
+              </button>
+            </div>
           )}
         </div>
       )}

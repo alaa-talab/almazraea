@@ -17,6 +17,7 @@
     "email-validator": "^2.0.4",
     "express": "^4.19.2",
     "express-session": "^1.18.0",
+    "firebase": "^10.12.2",
     "jsonwebtoken": "^9.0.2",
     "libphonenumber-js": "^1.11.3",
     "mongoose": "^8.4.1",
