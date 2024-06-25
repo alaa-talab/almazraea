@@ -1,0 +1,13 @@
+/* HomePage.css */
+@keyframes movingImage {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  
+  .animate-moving-image {
+    animation: movingImage 3s infinite;
+  }

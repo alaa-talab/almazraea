@@ -8,6 +8,7 @@ const ResortDetail = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState('');
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     const fetchResort = async () => {
@@ -24,28 +25,23 @@ const ResortDetail = ({ user }) => {
     fetchResort();
   }, [id]);
 
-  useEffect(() => {
-    console.log('User object:', user); // Log the user object for debugging
-  }, [user]);
-
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
 
-    console.log('User object:', user); // Log the user object for debugging
+    setProcessing(true);
 
     try {
-      const payload = { text: commentText, user: user.userId }; // Use user.userId instead of user._id
+      const payload = { text: commentText, user: user.userId };
       const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` };
-
-      console.log('Sending request payload:', payload);
-      console.log('Sending request headers:', headers);
 
       const response = await axios.post(`http://localhost:5000/resorts/${id}/comments`, payload, { headers });
       setComments(response.data.comments);
       setCommentText('');
     } catch (error) {
       console.error('Error adding comment:', error);
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -57,11 +53,16 @@ const ResortDetail = ({ user }) => {
     return <p>Resort not found.</p>;
   }
 
+  const defaultProfilePicture = 'https://res.cloudinary.com/dvcfefmys/image/upload/v1718042315/profile_avatar_Blank_User_Circles_kwxcyg.png';
+
   return (
     <div className="container mx-auto px-4 py-16">
       <h1 className="text-5xl font-bold">{resort.name}</h1>
       <p className="mt-4 text-xl">{resort.description}</p>
       <p className="mt-4 text-xl">الموقع: {resort.location}</p>
+      <p className="mt-4 text-xl">
+        حالة التوفر: <span className={resort.available ? 'text-green-600' : 'text-red-600'}>{resort.available ? 'متاح' : 'غير متاح'}</span>
+      </p>
       <div className="mt-4">
         {resort.images && resort.images.length > 0 && (
           <div>
@@ -100,13 +101,17 @@ const ResortDetail = ({ user }) => {
       <p className="mt-4 text-xl">التقييم: {resort.rating} / 5</p>
       <div className="flex items-center mt-4">
         <img
-          src={resort.owner.profilePicture}
-          alt={resort.owner.username}
+          src={resort.owner?.profilePicture || defaultProfilePicture}
+          alt={resort.owner?.username || 'Unknown Owner'}
           className="h-8 w-8 rounded-full"
         />
-        <Link to={`/user-profile/${resort.owner._id}`} className="ml-2 text-gray-600 hover:underline">
-          {resort.owner.username}
-        </Link>
+        {resort.owner ? (
+          <Link to={`/user-profile/${resort.owner._id}`} className="ml-2 text-gray-600 hover:underline">
+            {resort.owner.username}
+          </Link>
+        ) : (
+          <span className="ml-2 text-gray-600">مستخدم عام</span>
+        )}
       </div>
       <div className="mt-8">
         <h2 className="text-3xl font-bold">التعليقات</h2>
@@ -115,8 +120,8 @@ const ResortDetail = ({ user }) => {
             {comments.map((comment) => (
               <li key={comment._id} className="bg-gray-100 p-4 rounded">
                 <div className="flex items-center">
-                  <img src={comment.user?.profilePicture} alt={comment.user?.username} className="h-8 w-8 rounded-full" />
-                  <span className="ml-2 font-bold">{comment.user?.username}</span>
+                  <img src={comment.user?.profilePicture || defaultProfilePicture} alt={comment.user?.username || 'Unknown User'} className="h-8 w-8 rounded-full" />
+                  <span className="ml-2 font-bold">{comment.user?.username || 'Unknown User'}</span>
                 </div>
                 <p className="mt-2">{comment.text}</p>
                 <p className="text-sm text-gray-500 mt-1">{new Date(comment.createdAt).toLocaleString()}</p>
@@ -136,7 +141,7 @@ const ResortDetail = ({ user }) => {
               className="w-full px-3 py-2 border rounded"
             />
             <button type="submit" className="bg-blue-500 text-white py-2 px-4 rounded mt-2">
-              إرسال
+              {processing ? 'Processing...' : 'إرسال'}
             </button>
           </form>
         )}

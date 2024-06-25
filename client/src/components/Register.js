@@ -50,12 +50,12 @@ const Register = ({ setUser }) => {
         phone,
         role
       });
-      const { token, role: userRole, userId } = response.data; // Include userId
+      const { token, role: userRole, userId } = response.data; // Removed emailToken
       localStorage.setItem('token', token);
       localStorage.setItem('role', userRole);
       localStorage.setItem('userId', userId); // Store userId
       setUser({ role: userRole, userId });
-      navigate('/');
+      navigate('/'); // Navigate to the home page
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
         setError(err.response.data.message);

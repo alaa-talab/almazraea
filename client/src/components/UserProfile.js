@@ -1,23 +1,26 @@
 import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useParams } from 'react-router-dom'; // Removed useNavigate import
 
 const UserProfile = ({ user, setUser }) => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
   const [profilePicture, setProfilePicture] = useState(null);
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) {
-          setError('No token found. Please log in.');
+          setError('الرجاء تسجبل الدخول للمتابعة.');
           setLoading(false);
+          setTimeout(() => navigate('/login'), 3000); // Redirect after 3 seconds
           return;
         }
         const response = await axios.get(`http://localhost:5000/user/${id}`, {
@@ -36,14 +39,15 @@ const UserProfile = ({ user, setUser }) => {
       }
     };
     fetchUser();
-  }, [id]);
+  }, [id, navigate]);
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    setProcessing(true);
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        setError('No token found. Please log in.');
+        setError('الرجاء تسجبل الدخول للمتابعة.');
         return;
       }
       const formData = new FormData();
@@ -63,6 +67,8 @@ const UserProfile = ({ user, setUser }) => {
     } catch (error) {
       console.error('Error updating profile:', error);
       setError('Failed to update profile.');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -81,7 +87,7 @@ const UserProfile = ({ user, setUser }) => {
           <img src={profile.profilePicture || 'default_profile_picture_url'} alt={profile.username} className="h-32 w-32 rounded-full" />
           <p className="mt-4 text-xl">الاسم: {profile.username}</p>
           <p className="mt-2 text-xl">رقم الهاتف: {profile.phone}</p>
-          <p className="mt-2 text-xl">الايميل: {profile.email}</p> {/* Display email */}
+          <p className="mt-2 text-xl">الايميل: {profile.email}</p>
           {user && user.userId === id ? (
             <form onSubmit={handleUpdate} className="mt-4 space-y-4">
               <input
@@ -104,7 +110,7 @@ const UserProfile = ({ user, setUser }) => {
                 className="w-full px-3 py-2 border rounded"
               />
               <button type="submit" className="bg-blue-500 text-white py-2 px-4 rounded">
-                تحديث الملف الشخصي
+                {processing ? 'Processing...' : 'تحديث الملف الشخصي'}
               </button>
             </form>
           ) : (

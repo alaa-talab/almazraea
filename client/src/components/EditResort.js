@@ -4,10 +4,11 @@ import axios from 'axios';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 
-function EditResort() {
+function EditResort({ user }) {
   const { id } = useParams();
   const [resort, setResort] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [location, setLocation] = useState('');
@@ -18,13 +19,19 @@ function EditResort() {
   const [photoBanner, setPhotoBanner] = useState(null);
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+  const [rating, setRating] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchResort = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/resorts/${id}`);
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`http://localhost:5000/resorts/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         const data = response.data;
         setResort(data);
         setName(data.name);
@@ -35,6 +42,7 @@ function EditResort() {
         setMinPrice(data.minPrice);
         setMaxPrice(data.maxPrice);
         setPhotoBanner(data.photoBanner);
+        setRating(data.rating);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching resort:', error);
@@ -46,6 +54,7 @@ function EditResort() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setProcessing(true);
 
     try {
       const imageUrls = await uploadFiles(images, 'image');
@@ -63,19 +72,30 @@ function EditResort() {
         photoBanner: bannerUrl[0],
         minPrice,
         maxPrice,
-        rating: resort.rating,
       };
 
+      const token = localStorage.getItem('token');
       await axios.put(`http://localhost:5000/resorts/${id}`, updatedResort, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+          Authorization: `Bearer ${token}`
         }
       });
 
-      navigate('/myresorts'); // Redirect to MyResorts page
+      if (user?.role === 'admin') {
+        await axios.put(`http://localhost:5000/resorts/${id}/rate`, { rating }, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        navigate('/cp-admin/manage-resorts');
+      } else {
+        navigate('/myresorts');
+      }
     } catch (error) {
       console.error('Error updating resort:', error);
       setError('Failed to update resort. Please try again.');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -84,14 +104,14 @@ function EditResort() {
     for (const file of files) {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', 'ml_default'); // Replace with your Cloudinary upload preset
+      formData.append('upload_preset', 'ml_default');
 
       try {
         const response = await axios.post(`https://api.cloudinary.com/v1_1/dvcfefmys/${type}/upload`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
-        }); // Replace with your Cloudinary cloud name
+        });
         urls.push(response.data.secure_url);
       } catch (error) {
         console.error('Error uploading to Cloudinary:', error.response ? error.response.data : error.message);
@@ -107,6 +127,7 @@ function EditResort() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-3xl mx-auto p-4 bg-white rounded shadow-md">
+      {processing && <p>Processing...</p>}
       {error && <p className="text-red-500">{error}</p>}
       <div>
         <label className="block text-gray-700 mb-2">اسم المنتجع</label>
@@ -121,7 +142,7 @@ function EditResort() {
       <div>
         <label className="block text-gray-700 mb-2">رقم الهاتف</label>
         <PhoneInput
-          country={'jo'} // Specify Jordan as the default country
+          country={'jo'}
           value={phone}
           onChange={(phone) => setPhone(phone)}
           placeholder="رقم الهاتف"
@@ -205,7 +226,6 @@ function EditResort() {
             onChange={(e) => setMinPrice(e.target.value)}
             placeholder="الحد الأدنى للسعر"
             type="number"
-            required
             className="w-full px-3 py-2 border rounded"
           />
         </div>
@@ -216,11 +236,22 @@ function EditResort() {
             onChange={(e) => setMaxPrice(e.target.value)}
             placeholder="الحد الأقصى للسعر"
             type="number"
-            required
             className="w-full px-3 py-2 border rounded"
           />
         </div>
       </div>
+      {user?.role === 'admin' && (
+        <div>
+          <label className="block text-gray-700 mb-2">تقييم المنتجع</label>
+          <input
+            value={rating}
+            onChange={(e) => setRating(e.target.value)}
+            placeholder="تقييم المنتجع"
+            type="number"
+            className="w-full px-3 py-2 border rounded"
+          />
+        </div>
+      )}
       <button type="submit" className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700">
         تحديث منتجع
       </button>

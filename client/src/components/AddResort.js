@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 
-function AddResort() {
+function AddResort({ user }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [location, setLocation] = useState('');
@@ -15,11 +15,15 @@ function AddResort() {
   const [photoBanner, setPhotoBanner] = useState(null);
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+  const [available, setAvailable] = useState(true);
+  const [rating, setRating] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setLoading(true);
 
     try {
       const imageUrls = await uploadFiles(images, 'image');
@@ -34,10 +38,11 @@ function AddResort() {
         description,
         images: imageUrls,
         videos: videoUrls,
-        photoBanner: bannerUrl[0], // Save the banner URL
-        minPrice,
-        maxPrice,
-        rating: 4,
+        photoBanner: bannerUrl[0],
+        minPrice: minPrice || undefined,
+        maxPrice: maxPrice || undefined,
+        available,
+        rating: user?.role === 'admin' ? rating : 4, // Admin can set initial rating
       };
 
       await axios.post('http://localhost:5000/resorts', newResort, {
@@ -56,11 +61,19 @@ function AddResort() {
       setPhotoBanner(null);
       setMinPrice('');
       setMaxPrice('');
+      setAvailable(true);  // Reset available state
+      setRating('');  // Reset rating state
       setError('');
-      navigate('/'); // Redirect to home page
+      if (user?.role === 'admin') {
+        navigate('/cp-admin/manage-resorts');
+      } else {
+        navigate('/myresorts');
+      }
     } catch (error) {
       console.error('Error uploading resort:', error);
       setError('Failed to upload resort. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -69,14 +82,14 @@ function AddResort() {
     for (const file of files) {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', 'ml_default'); // Replace with your Cloudinary upload preset
+      formData.append('upload_preset', 'ml_default');
 
       try {
         const response = await axios.post(`https://api.cloudinary.com/v1_1/dvcfefmys/${type}/upload`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
-        }); // Replace with your Cloudinary cloud name
+        });
         urls.push(response.data.secure_url);
       } catch (error) {
         console.error('Error uploading to Cloudinary:', error.response ? error.response.data : error.message);
@@ -88,6 +101,7 @@ function AddResort() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-3xl mx-auto p-4 bg-white rounded shadow-md">
+      {loading && <p>قيد المعالجة...</p>}
       {error && <p className="text-red-500">{error}</p>}
       <div>
         <label className="block text-gray-700 mb-2">اسم المنتجع</label>
@@ -102,7 +116,7 @@ function AddResort() {
       <div>
         <label className="block text-gray-700 mb-2">رقم الهاتف</label>
         <PhoneInput
-          country={'jo'} // Specify Jordan as the default country
+          country={'jo'}
           value={phone}
           onChange={(phone) => setPhone(phone)}
           placeholder="رقم الهاتف"
@@ -154,7 +168,6 @@ function AddResort() {
           accept="image/*"
           onChange={(e) => setImages(e.target.files)}
           placeholder="صور المنتجع"
-          required
           className="w-full px-3 py-2 border rounded"
         />
       </div>
@@ -176,7 +189,6 @@ function AddResort() {
           accept="image/*"
           onChange={(e) => setPhotoBanner(e.target.files[0])}
           placeholder="صورة البانر"
-          required
           className="w-full px-3 py-2 border rounded"
         />
       </div>
@@ -188,7 +200,6 @@ function AddResort() {
             onChange={(e) => setMinPrice(e.target.value)}
             placeholder="الحد الأدنى للسعر"
             type="number"
-            required
             className="w-full px-3 py-2 border rounded"
           />
         </div>
@@ -199,11 +210,34 @@ function AddResort() {
             onChange={(e) => setMaxPrice(e.target.value)}
             placeholder="الحد الأقصى للسعر"
             type="number"
-            required
             className="w-full px-3 py-2 border rounded"
           />
         </div>
       </div>
+      <div>
+        <label className="block text-gray-700 mb-2">حالة التوفر</label>
+        <select 
+          value={available}
+          onChange={(e) => setAvailable(e.target.value === 'true')}
+          required
+          className="w-full px-3 py-2 border rounded"
+        >
+          <option value="true">متاح</option>
+          <option value="false">غير متاح</option>
+        </select>
+      </div>
+      {user?.role === 'admin' && (
+        <div>
+          <label className="block text-gray-700 mb-2">تقييم</label>
+          <input
+            value={rating}
+            onChange={(e) => setRating(e.target.value)}
+            placeholder="تقييم"
+            type="number"
+            className="w-full px-3 py-2 border rounded"
+          />
+        </div>
+      )}
       <button type="submit" className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700">
         إضافة منتجع
       </button>

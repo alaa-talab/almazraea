@@ -16,10 +16,11 @@ const resortSchema = new Schema({
   images: [String],
   videos: [String],
   photoBanner: String,
-  minPrice: { type: Number, required: true },
-  maxPrice: { type: Number, required: true },
+  minPrice: { type: Number },
+  maxPrice: { type: Number },
   rating: { type: Number, required: true },
   owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  available: { type: Boolean}, // New property
   comments: [commentSchema]
 }, { timestamps: true });
 
