@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import LazyLoad from 'react-lazyload';
-import { FaRegSadCry, FaSearch, FaMapMarkerAlt, FaDollarSign, FaCamera, FaHome, FaUserCircle} from 'react-icons/fa';
+import { FaRegSadCry, FaSearch, FaMapMarkerAlt, FaDollarSign, FaCamera, FaUserCircle } from 'react-icons/fa';
 import { FiMenu } from 'react-icons/fi';
 import { LuPalmtree } from "react-icons/lu";
 import './HomePage.css';
 import { FaFacebook, FaTwitter, FaInstagram, FaEnvelope, FaPhoneAlt } from 'react-icons/fa';
-
 
 const HomePage = ({ user, setUser, onLogout }) => {
   const [resorts, setResorts] = useState([]);
@@ -18,6 +17,7 @@ const HomePage = ({ user, setUser, onLogout }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [userProfilePicture, setUserProfilePicture] = useState('');
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const Footer = () => (
     <footer className="bg-pink-600 text-white py-8">
@@ -42,8 +42,8 @@ const HomePage = ({ user, setUser, onLogout }) => {
           <a href="tel:+123456789" className="hover:underline pl-5"><FaPhoneAlt size={24} /></a>
         </div>
         <div className="text-center md:text-left mt-4 md:mt-0">
-        <p>جميع الحقوق محفوظة لموقع المزرعة. {new Date().getFullYear()} ©</p>
-      </div>
+          <p>جميع الحقوق محفوظة لموقع المزرعة. {new Date().getFullYear()} ©</p>
+        </div>
       </div>
     </footer>
   );
@@ -51,8 +51,9 @@ const HomePage = ({ user, setUser, onLogout }) => {
   useEffect(() => {
     const fetchResorts = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/resorts');
-        setResorts(response.data);
+        const response = await axios.get('http://localhost:5000/homepage-resorts');
+        const availableResorts = response.data.filter(resort => resort.available);
+        setResorts(availableResorts);
       } catch (error) {
         console.error('Error fetching resorts:', error);
       } finally {
@@ -94,6 +95,19 @@ const HomePage = ({ user, setUser, onLogout }) => {
     }
   };
 
+  const handleAddResortClick = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+  
+    navigate('/add-resort');
+  };
+
+  const handleMyResortsClick = () => {
+    navigate('/myresorts');
+  };
+
   const defaultProfilePicture = 'https://res.cloudinary.com/dvcfefmys/image/upload/v1718042315/profile_avatar_Blank_User_Circles_kwxcyg.png';
 
   return (
@@ -106,30 +120,30 @@ const HomePage = ({ user, setUser, onLogout }) => {
           <nav className="flex items-center">
             <div className="flex items-center md:hidden">
               <button onClick={() => setDropdownOpen(!dropdownOpen)} className="text-gray-600 focus:outline-none">
-                <FiMenu size={28} />
+                <FiMenu className='text-pink-600' size={28} />
               </button>
             </div>
             <ul className="hidden md:flex items-center space-x-4 ml-4">
               <li><Link to="/" className="text-pink-600 hover:text-pink-800 transition duration-300 pl-4">الصفحة الرئيسية</Link></li>
               <li><Link to="/resorts" className="text-pink-600 hover:text-pink-800 transition duration-300 flex items-center"><LuPalmtree className="ml-2" />مزارع</Link></li>
-              {user?.role === 'owner' && (
-                <>
-                  <li>
-                    <Link to="/add-resort">
-                      <button className="bg-pink-600 text-white py-2 px-4 rounded hover:bg-pink-800 transition duration-300 flex items-center">
-                        <FaCamera className="ml-2 mb-1" /> اضف مزرعتك الان
-                      </button>
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="/myresorts">
-                      <button className="bg-pink-600 text-white py-2 px-4 rounded hover:bg-pink-800 transition duration-300 flex items-center">
-                        <FaHome className="ml-2 mb-1" size={20} /> مزارعي
-                      </button>
-                    </Link>
-                  </li>
-                </>
+              {user && (
+                <li>
+                  <button
+                    onClick={handleMyResortsClick}
+                    className="text-pink-600 hover:text-pink-800 transition duration-300"
+                  >
+                    مزارعي
+                  </button>
+                </li>
               )}
+              <li>
+                <button
+                  onClick={handleAddResortClick}
+                  className="bg-pink-600 text-white py-2 px-4 rounded hover:bg-pink-800 transition duration-300 flex items-center"
+                >
+                  <FaCamera className="ml-2 mb-1" /> اضف مزرعتك الان
+                </button>
+              </li>
             </ul>
             <div className="relative ml-4 hidden md:block">
               {user ? (
@@ -144,14 +158,12 @@ const HomePage = ({ user, setUser, onLogout }) => {
                   {dropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1">
                       <Link to={`/user-profile/${user.userId}`} className="block px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center"><FaUserCircle className="ml-2" />الملف الشخصي</Link>
-                      {user.role === 'owner' && (
-                        <Link to="/add-resort" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">اضف مزرعتك الان</Link>
-                      )}
+                      <Link to="/add-resort" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">اضف مزرعتك الان</Link>
                       <button
                         onClick={onLogout}
                         className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center"
                       >
-                         تسجيل خروج
+                        تسجيل خروج
                       </button>
                     </div>
                   )}
@@ -170,21 +182,19 @@ const HomePage = ({ user, setUser, onLogout }) => {
             <ul className="flex flex-col space-y-2">
               <li><Link to="/" className="block px-4 py-2 text-pink-600 hover:text-pink-800">الصفحة الرئيسية</Link></li>
               <li><Link to="/resorts" className="block px-4 py-2 text-pink-600 hover:text-pink-800 flex items-center"><LuPalmtree className="ml-2" />مزارع</Link></li>
-              {user?.role === 'owner' && (
-                <>
-                  <li><Link to="/add-resort" className="block px-4 py-2 text-pink-600 hover:text-pink-800">اضف مزرعتك الان </Link></li>
-                  <li><Link to="/myresorts" className="block px-4 py-2 text-pink-600 hover:text-pink-800">مزارعي</Link></li>
-                </>
+              {user && (
+                <li><button onClick={handleMyResortsClick} className="block px-4 py-2 text-pink-600 hover:text-pink-800">مزارعي</button></li>
               )}
+              <li><button onClick={handleAddResortClick} className="block px-4 py-2 text-pink-600 hover:text-pink-800">اضف مزرعتك الان</button></li>
               {user && (
                 <>
-                  <li><Link to={`/user-profile/${user.userId}`} className="block px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center"><FaUserCircle className="ml-2" />الملف الشخصي</Link></li>
+                  <li><Link to={`/user-profile/${user.userId}`} className="block px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center"><FaUserCircle className="ml-2 text-pink-600" />الملف الشخصي</Link></li>
                   <li>
                     <button
                       onClick={onLogout}
                       className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center"
                     >
-                     تسجيل خروج
+                      تسجيل خروج
                     </button>
                   </li>
                 </>
@@ -264,17 +274,17 @@ const HomePage = ({ user, setUser, onLogout }) => {
           <section className="container mx-auto mt-0 mb-0 pt-0 pb-0 bg-cover bg-center h-screen">
             <div className="container mx-auto px-4 pt-10 flex flex-col md:flex-row items-center justify-between">
               <div className="md:w-1/2 text-center md:text-right text-black">
-                <h1 className="text-3xl md:text-5xl font-bold mb-4">أول موقع مختص بالمزارع في الأردن</h1>
+                <h1 className="text-3xl md:text-5xl font-bold py-4 mb-4">أول موقع مختص بالمزارع في الأردن</h1>
                 <p className="mt-4 text-lg md:text-xl">
-                  مرحبًا بكم في <strong>موقع المزرعة في الأردن</strong>، وجهتكم الأولى للبحث عن المزارع المثالية في جميع أنحاء المملكة الأردنية. نحن هنا لنساعدك في العثور على المزرعة التي تناسب احتياجاتك، سواء كنت تبحث عن مكان هادئ في جبال عجلون أو شواطئ العقبة الساحرة.
+                  مرحبًا بكم في <strong className='text-pink-600'>موقع المزرعة في الأردن</strong>، وجهتكم الأولى للبحث عن المزارع المثالية في جميع أنحاء المملكة الأردنية. نحن هنا لنساعدك في العثور على المزرعة التي تناسب احتياجاتك، سواء كنت تبحث عن مكان هادئ في جبال عجلون أو شواطئ العقبة الساحرة.
                 </p>
                 <p className="mt-4 text-lg md:text-xl">
                   استعرض مجموعة متنوعة من المزارع في المواقع المختلفة مثل عمان، جرش، عجلون، العقبة، الجوفة، والأغوار. يمكنك الإعلان عن مزرعتك بسهولة ومشاركة صورها مع الآخرين.
                 </p>
-                <p className="mt-4 text-lg md:text-xl">
+                <p className="mt-4 text-lg md:text-xl pb-2">
                   هدفنا هو تسهيل عملية البحث والإعلان لتجربة مريحة وسهلة. ابحث الآن عن المزرعة المناسبة لك في الأردن.
                 </p>
-                <Link to="/resorts" className="mt-4 inline-block bg-pink-600 text-white py-2 px-4 rounded hover:bg-pink-800 transition duration-300">
+                <Link to="/resorts" className="mt-4 inline-block bg-pink-600 text-white py-3 px-4 rounded hover:bg-pink-800 transition duration-300">
                   اكتشف المزيد
                 </Link>
               </div>
@@ -291,7 +301,7 @@ const HomePage = ({ user, setUser, onLogout }) => {
         )
       )}
 
-      <section className="container isolate mx-auto mt-0 pr-4 pl-4 pt-40 pb-20">
+      <section className="container isolate mx-auto mt-0 pr-4 pl-4 pt-96 pb-20 md:pt-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {resorts.map(resort => (
             <div key={resort._id} className="bg-white rounded shadow-lg overflow-hidden transform hover:scale-105 transition duration-300">
@@ -300,7 +310,15 @@ const HomePage = ({ user, setUser, onLogout }) => {
               </LazyLoad>
               <div className="p-4">
                 <h3 className="text-2xl font-bold text-pink-600">{resort.name}</h3>
-                <p className="mt-2 text-gray-600">{resort.description}</p>
+                <h4 className="mt-2 text-gray-600 truncate-2-lines">{resort.description}</h4>
+                    <Link to={`/resorts/${resort._id}`} className="text-pink-600 hover:underline">قراءة المزيد</Link>
+                <div className='flex items-center mt-2'>
+                  <FaMapMarkerAlt className="text-ed0056 ml-2 text-pink-600" />
+                  <p className='mt-2 text-gray-600 font-bold'>الموقع: <span className='mt-2 font-normal'>{resort.location}</span></p>
+                  </div>
+                <div className='flex items-center mt-2 px-0'>
+                <p className="mt-2 text-gray-600 font-extrabold"><FaDollarSign className="inline-block mb-1 text-pink-600" /> متوسط السعر: <span className='mt-2 font-semibold'>{((resort.minPrice + resort.maxPrice) / 2).toFixed(2)}  دينار</span></p>
+                </div>
                 <div className="flex items-center mt-4">
                   <img
                     src={resort.owner?.profilePicture || defaultProfilePicture}
@@ -308,11 +326,15 @@ const HomePage = ({ user, setUser, onLogout }) => {
                     className="h-8 w-8 rounded-full"
                   />
                   <div className='px-2'>
-                  <span className="ml-2">{resort.owner?.username}</span>
+                    <Link to={`/user-profile/${resort.owner._id}`} className="ml-2 text-gray-600 hover:text-pink-600"> <span className="ml-2 text-black-800 font-medium">{resort.owner?.username}</span></Link>
                   </div>
+              
+                  
+                    
+               
                 </div>
-                <p className="mt-2">
-                  حالة التوفر: <span className={resort.available ? 'text-green-600 px-1' : 'text-red-600 px-1 '}>{resort.available ? 'متاح' : 'غير متاح'}</span>
+                <p className="mt-2 py-3 font-bold">
+                  حالة التوفر: <span className={resort.available ? 'text-green-600 px-1' : 'text-red-600 px-1'}>{resort.available ? 'متاح' : 'غير متاح'}</span>
                 </p>
                 <Link to={`/resorts/${resort._id}`} className="mt-2 inline-block bg-pink-600 text-white py-2 px-4 rounded hover:bg-pink-800 transition duration-300">
                   اكتشف المزيد

@@ -37,55 +37,53 @@ const CPAdmin = ({ setAdmin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 rtl">
-      <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">تسجيل دخول الإدارة</h1>
-        {error && <p className="text-red-500 mb-4">{error}</p>}
-        <form onSubmit={handleLogin}>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">اسم المستخدم</label>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 font-arabic rtl ">
+      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h1 className="text-3xl font-semibold mb-6 text-center text-pink-600">تسجيل دخول الإدارة</h1>
+        {error && <p className="text-red-600 text-center mb-4">{error}</p>}
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-gray-700 text-sm font-medium mb-1">اسم المستخدم</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-pink-500 focus:border-pink-500 transition duration-300 ease-in-out"
               required
             />
           </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">كلمة المرور</label>
+          <div>
+            <label className="block text-gray-700 text-sm font-medium mb-1">كلمة المرور</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-pink-500 focus:border-pink-500 transition duration-300 ease-in-out"
               required
             />
           </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">حل التحدي: {num1} + {num2} = ؟</label>
+          <div>
+            <label className="block text-gray-700 text-sm font-medium mb-1">حل التحدي: {num1} + {num2} = ؟</label>
             <input
               type="number"
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-pink-500 focus:border-pink-500 transition duration-300 ease-in-out"
               required
             />
           </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="mr-2"
-              />
-              تذكرني
-            </label>
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="mr-2"
+            />
+            <label className="text-gray-700 text-sm font-medium px-1">تذكرني</label>
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700"
+            className="w-full bg-pink-600 text-white py-3 px-4 rounded-lg shadow-md hover:bg-pink-700 transition duration-150 ease-in-out"
           >
             تسجيل الدخول
           </button>

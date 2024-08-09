@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
+import { FaPhone, FaMapMarkerAlt, FaLink, FaFileImage, FaFileVideo, FaDollarSign, FaClipboardList } from 'react-icons/fa';
+import { MdOutlineHotel } from 'react-icons/md';
 
 function AddResort({ user }) {
   const [name, setName] = useState('');
@@ -20,6 +22,8 @@ function AddResort({ user }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const locationState = useLocation().state;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -43,6 +47,7 @@ function AddResort({ user }) {
         maxPrice: maxPrice || undefined,
         available,
         rating: user?.role === 'admin' ? rating : 4, // Admin can set initial rating
+        owner: locationState?.userId, // Ensure owner is set correctly
       };
 
       await axios.post('http://localhost:5000/resorts', newResort, {
@@ -64,11 +69,9 @@ function AddResort({ user }) {
       setAvailable(true);  // Reset available state
       setRating('');  // Reset rating state
       setError('');
-      if (user?.role === 'admin') {
-        navigate('/cp-admin/manage-resorts');
-      } else {
-        navigate('/myresorts');
-      }
+
+      // Navigate to MyResorts page
+      navigate('/myresorts');
     } catch (error) {
       console.error('Error uploading resort:', error);
       setError('Failed to upload resort. Please try again.');
@@ -100,148 +103,179 @@ function AddResort({ user }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-3xl mx-auto p-4 bg-white rounded shadow-md">
-      {loading && <p>قيد المعالجة...</p>}
-      {error && <p className="text-red-500">{error}</p>}
-      <div>
-        <label className="block text-gray-700 mb-2">اسم المنتجع</label>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="اسم المنتجع"
-          required
-          className="w-full px-3 py-2 border rounded"
-        />
-      </div>
-      <div>
-        <label className="block text-gray-700 mb-2">رقم الهاتف</label>
-        <PhoneInput
-          country={'jo'}
-          value={phone}
-          onChange={(phone) => setPhone(phone)}
-          placeholder="رقم الهاتف"
-          inputClass="w-full px-3 py-2 border rounded"
-        />
-      </div>
-      <div>
-        <label className="block text-gray-700 mb-2">الموقع</label>
-        <select 
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          required
-          className="w-full px-3 py-2 border rounded"
-        >
-          <option value="">اختر الموقع</option>
-          <option value="عمان">عمان</option>
-          <option value="جرش">جرش</option>
-          <option value="عجلون">عجلون</option>
-          <option value="العقبه">العقبه</option>
-          <option value="الجوفة">الجوفة</option>
-          <option value="الاغوار">الاغوار</option>
-        </select>
-      </div>
-      <div>
-        <label className="block text-gray-700 mb-2">رابط الموقع</label>
-        <input
-          value={locationLink}
-          onChange={(e) => setLocationLink(e.target.value)}
-          placeholder="رابط الموقع"
-          required
-          className="w-full px-3 py-2 border rounded"
-        />
-      </div>
-      <div>
-        <label className="block text-gray-700 mb-2">وصف المنتجع</label>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="وصف المنتجع"
-          required
-          className="w-full px-3 py-2 border rounded"
-        />
-      </div>
-      <div>
-        <label className="block text-gray-700 mb-2">صور المنتجع</label>
-        <input
-          type="file"
-          multiple
-          accept="image/*"
-          onChange={(e) => setImages(e.target.files)}
-          placeholder="صور المنتجع"
-          className="w-full px-3 py-2 border rounded"
-        />
-      </div>
-      <div>
-        <label className="block text-gray-700 mb-2">فيديوهات المنتجع</label>
-        <input
-          type="file"
-          multiple
-          accept="video/*"
-          onChange={(e) => setVideos(e.target.files)}
-          placeholder="فيديوهات المنتجع"
-          className="w-full px-3 py-2 border rounded"
-        />
-      </div>
-      <div>
-        <label className="block text-gray-700 mb-2">صورة البانر</label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setPhotoBanner(e.target.files[0])}
-          placeholder="صورة البانر"
-          className="w-full px-3 py-2 border rounded"
-        />
-      </div>
-      <div className="flex space-x-4">
-        <div className="w-1/2">
-          <label className="block text-gray-700 mb-2">الحد الأدنى للسعر</label>
+    <div className="font-arabic rtl">
+    <div className="max-w-5xl mx-auto p-6 my-6 bg-gray-50 rounded-lg shadow-lg">
+      <h1 className="text-3xl font-extrabold text-gray-800 mb-6 text-center text-pink-600">إضافة المزرعة </h1>
+
+      {loading && <p className="text-pink-600">قيد المعالجة...</p>}
+      {error && <p className="text-red-500 mb-4">{error}</p>}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-white p-6 rounded-lg shadow-md flex items-center gap-2">
+          <MdOutlineHotel className="text-pink-600" />
+          <label className="block text-gray-700 mb-2 font-medium">اسم المنتجع</label>
           <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="اسم المنتجع"
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+          />
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md flex items-center gap-2">
+          <FaPhone className="text-pink-600" />
+          <label className="block text-gray-700 mb-2 font-medium">رقم الهاتف</label>
+          <PhoneInput
+            country={'jo'}
+            value={phone}
+            onChange={(phone) => setPhone(phone)}
+            placeholder="رقم الهاتف"
+            inputClass="!w-full !px-4 !py-2 !border !border-gray-300 !rounded-md !shadow-sm !focus:outline-none !focus:ring-2 !focus:ring-pink-500"
+          />
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md flex items-center gap-2">
+          <FaMapMarkerAlt className="text-pink-600 mb-4"/>
+          <label className="block text-gray-700 mb-2 font-medium">الموقع</label>
+          <select
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+          >
+            <option value="">اختر الموقع</option>
+            <option value="عمان">عمان</option>
+            <option value="جرش">جرش</option>
+            <option value="عجلون">عجلون</option>
+            <option value="العقبه">العقبه</option>
+            <option value="الجوفة">الجوفة</option>
+            <option value="الاغوار">الاغوار</option>
+          </select>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md flex items-center gap-2">
+          <FaLink className="text-pink-600" />
+          <label className="block text-gray-700 mb-2 font-medium">رابط الموقع</label>
+          <input
+            value={locationLink}
+            onChange={(e) => setLocationLink(e.target.value)}
+            placeholder="رابط الموقع"
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+          />
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md flex items-center gap-2">
+          <FaClipboardList className="text-pink-600" />
+          <label className="block text-gray-700 mb-2 font-medium">وصف المنتجع</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="وصف المنتجع"
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+          />
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md flex items-center gap-2">
+          <FaFileImage className="text-pink-600" />
+          <label className="block text-gray-700 mb-2 font-medium">صور المنتجع</label>
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={(e) => setImages(e.target.files)}
+            className="w-full text-gray-600 file:border file:border-gray-300 file:bg-white file:px-4 file:py-2 file:rounded-md file:shadow-sm file:cursor-pointer focus:outline-none focus:ring-2 focus:ring-pink-500"
+          />
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md flex items-center gap-2">
+          <FaFileVideo className="text-pink-600" />
+          <label className="block text-gray-700 mb-2 font-medium">فيديوهات المنتجع</label>
+          <input
+            type="file"
+            multiple
+            accept="video/*"
+            onChange={(e) => setVideos(e.target.files)}
+            className="w-full text-gray-600 file:border file:border-gray-300 file:bg-white file:px-4 file:py-2 file:rounded-md file:shadow-sm file:cursor-pointer focus:outline-none focus:ring-2 focus:ring-pink-500"
+          />
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md flex items-center gap-2">
+          <FaFileImage className="text-pink-600" />
+          <label className="block text-gray-700 mb-2 font-medium">صورة البانر</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setPhotoBanner(e.target.files[0])}
+            className="w-full text-gray-600 file:border file:border-gray-300 file:bg-white file:px-4 file:py-2 file:rounded-md file:shadow-sm file:cursor-pointer focus:outline-none focus:ring-2 focus:ring-pink-500"
+          />
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md flex items-center gap-2">
+          <FaDollarSign className="text-pink-600" />
+          <label className="block text-gray-700 mb-2 font-medium">الحد الأدنى للسعر</label>
+          <input
+            type="number"
             value={minPrice}
             onChange={(e) => setMinPrice(e.target.value)}
             placeholder="الحد الأدنى للسعر"
-            type="number"
-            className="w-full px-3 py-2 border rounded"
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
           />
         </div>
-        <div className="w-1/2">
-          <label className="block text-gray-700 mb-2">الحد الأقصى للسعر</label>
+
+        <div className="bg-white p-6 rounded-lg shadow-md flex items-center gap-2">
+          <FaDollarSign className="text-pink-600" />
+          <label className="block text-gray-700 mb-2 font-medium">الحد الأعلى للسعر</label>
           <input
+            type="number"
             value={maxPrice}
             onChange={(e) => setMaxPrice(e.target.value)}
-            placeholder="الحد الأقصى للسعر"
-            type="number"
-            className="w-full px-3 py-2 border rounded"
+            placeholder="الحد الأعلى للسعر"
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
           />
         </div>
-      </div>
-      <div>
-        <label className="block text-gray-700 mb-2">حالة التوفر</label>
-        <select 
-          value={available}
-          onChange={(e) => setAvailable(e.target.value === 'true')}
-          required
-          className="w-full px-3 py-2 border rounded"
+
+        <div className="bg-white p-6 rounded-lg shadow-md flex items-center gap-2">
+          <label className="block text-gray-700 mb-2 font-medium">التوفر</label>
+          <select
+            value={available}
+            onChange={(e) => setAvailable(e.target.value === 'true')}
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+          >
+            <option value={true}>متوفر</option>
+            <option value={false}>غير متوفر</option>
+          </select>
+        </div>
+
+        {user?.role === 'admin' && (
+          <div className="bg-white p-6 rounded-lg shadow-md flex items-center gap-2">
+            <label className="block text-gray-700 mb-2 font-medium">التقييم</label>
+            <input
+              type="number"
+              value={rating}
+              onChange={(e) => setRating(e.target.value)}
+              placeholder="التقييم"
+              min={1}
+              max={5}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+            />
+          </div>
+        )}
+
+        <button
+          type="submit"
+          className="w-full bg-pink-600 text-white py-2 px-4 rounded-md shadow-md hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-500"
         >
-          <option value="true">متاح</option>
-          <option value="false">غير متاح</option>
-        </select>
-      </div>
-      {user?.role === 'admin' && (
-        <div>
-          <label className="block text-gray-700 mb-2">تقييم</label>
-          <input
-            value={rating}
-            onChange={(e) => setRating(e.target.value)}
-            placeholder="تقييم"
-            type="number"
-            className="w-full px-3 py-2 border rounded"
-          />
-        </div>
-      )}
-      <button type="submit" className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700">
-        إضافة منتجع
-      </button>
-    </form>
+          أضف منتجع
+        </button>
+      </form>
+    </div>
+    </div>
   );
 }
 

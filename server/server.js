@@ -14,7 +14,9 @@ const cloudinary = require('./cloudinaryConfig');
 const Resort = require('./models/Resort');
 const User = require('./models/User');
 const Comment = require('./models/Comment');
+const Counter = require('./models/Counter');
 require('./passportConfig');
+
 
 dotenv.config();
 
@@ -23,7 +25,7 @@ const server = http.createServer(app);
 
 app.use(express.json());
 app.use(cors());
-app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: false }));
+app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: false, cookie: { secure: false } }));
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -42,6 +44,15 @@ const ADMIN_CREDENTIALS = {
   password: 'Admin123$',
 };
 
+const getNextSequence = async (name) => {
+  const counter = await Counter.findByIdAndUpdate(
+    { _id: name },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true }
+  );
+  return counter.seq;
+};
+
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const uploadFileToCloudinary = (fileBuffer, resourceType) => {
@@ -57,13 +68,11 @@ const uploadFileToCloudinary = (fileBuffer, resourceType) => {
   });
 };
 
+// Define the middleware to accept both 'admin' and 'owner'
 const authMiddleware = (requiredRoles = []) => {
   return (req, res, next) => {
     const authHeader = req.headers['authorization'];
-    console.log('Authorization Header:', authHeader);
-
     if (!authHeader) {
-      console.log('لم يتم توفير الرمز');
       return res.status(401).json({ message: 'لم يتم توفير الرمز' });
     }
     const token = authHeader.split(' ')[1];
@@ -72,17 +81,16 @@ const authMiddleware = (requiredRoles = []) => {
         const message = err.name === 'TokenExpiredError' ? 'انتهت صلاحية الجلسة' : 'فشل في المصادقة على الرمز';
         return res.status(401).json({ message });
       }
-      req.userId = decoded.id;
-      req.userRole = decoded.role;  // Ensure role is set
-      console.log('Authenticated user:', decoded);
-      if (requiredRoles.length && !requiredRoles.includes(decoded.role) && decoded.role !== 'admin') {
-        console.log('Access denied for role:', decoded.role);
+      req.userId = decoded.id; // This should be the user's ID from the token
+      req.userRole = decoded.role;
+      if (requiredRoles.length && !requiredRoles.includes(decoded.role)) {
         return res.status(403).json({ message: 'الدخول محظور' });
       }
       next();
     });
   };
 };
+
 
 
 // Define the admin user in your database (if not already present)
@@ -173,11 +181,18 @@ app.get('/homepage-resorts', async (req, res) => {
   }
 });
 
+
 // Update homepage resorts
 app.post('/homepage-resorts', authMiddleware('admin'), async (req, res) => {
   try {
+    const { resorts } = req.body; // Expecting an array of resort IDs
+
+    // Reset the homepage status for all resorts
     await Resort.updateMany({}, { $set: { homepage: false } });
-    await Resort.updateMany({ _id: { $in: req.body.resorts } }, { $set: { homepage: true } });
+
+    // Set the homepage status for selected resorts
+    await Resort.updateMany({ _id: { $in: resorts } }, { $set: { homepage: true } });
+
     res.json({ message: 'Homepage resorts updated successfully.' });
   } catch (error) {
     console.error('Error updating homepage resorts:', error);
@@ -185,10 +200,12 @@ app.post('/homepage-resorts', authMiddleware('admin'), async (req, res) => {
   }
 });
 
+
+
 // Add resort endpoint for admin
 app.post('/admin/add-resort', authMiddleware('admin'), async (req, res) => {
   try {
-    const { name, phone, location, locationLink, description, images, videos, photoBanner, minPrice, maxPrice, rating } = req.body;
+    const { name, phone, location, locationLink, description, images, videos, photoBanner, minPrice, maxPrice, rating, available, homepage } = req.body;
     const newResort = new Resort({
       name,
       phone,
@@ -197,11 +214,13 @@ app.post('/admin/add-resort', authMiddleware('admin'), async (req, res) => {
       description,
       images,
       videos,
+      available,
       photoBanner,
       minPrice,
       maxPrice,
       rating,
-      owner: req.userId // Ensure this is a valid ObjectId
+      owner: req.userId,
+      homepage // Include homepage field
     });
     await newResort.save();
     res.status(201).json(newResort);
@@ -210,6 +229,7 @@ app.post('/admin/add-resort', authMiddleware('admin'), async (req, res) => {
     res.status(500).json({ message: 'Failed to create resort.' });
   }
 });
+
 
 // Update resort rating
 app.put('/resorts/:id/rate', authMiddleware('admin'), async (req, res) => {
@@ -225,6 +245,63 @@ app.put('/resorts/:id/rate', authMiddleware('admin'), async (req, res) => {
     res.status(500).json({ message: 'Failed to update resort rating.' });
   }
 });
+
+// Update a resort
+app.put('/resorts/:id', authMiddleware(['user', 'admin']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      phone,
+      location,
+      locationLink,
+      description,
+      images,
+      videos,
+      photoBanner,
+      minPrice,
+      maxPrice,
+      available,
+      rating,
+      homepage // Include homepage field
+    } = req.body;
+
+    const updatedResort = {
+      name,
+      phone,
+      location,
+      locationLink,
+      description,
+      images,
+      videos,
+      photoBanner,
+      minPrice,
+      maxPrice,
+      available
+    };
+
+    // Ensure rating is updated only by admin
+    if (req.userRole === 'admin') {
+      updatedResort.rating = rating;
+    }
+     // Ensure rating is updated only by admin
+     if (req.userRole === 'admin') {
+      updatedResort.homepage = homepage;
+    }
+
+    const resort = await Resort.findByIdAndUpdate(id, updatedResort, { new: true });
+
+    if (!resort) {
+      return res.status(404).json({ message: 'Resort not found' });
+    }
+
+    res.json(resort);
+  } catch (error) {
+    console.error('Error updating resort:', error);
+    res.status(500).json({ message: 'Failed to update resort.' });
+  }
+});
+
 
 
 // Fetch user profile
@@ -311,9 +388,37 @@ const authenticateAdmin = (req, res, next) => {
 };
 
 // Example admin-only route
-app.get('/admin/dashboard', authenticateAdmin, (req, res) => {
-  res.json({ message: 'Welcome to the admin dashboard' });
+app.get('/admin/dashboard', authenticateAdmin, async (req, res) => {
+  try {
+    // Fetch total number of users
+    const totalUsers = await User.countDocuments();
+
+    // Fetch total number of resorts
+    const totalResorts = await Resort.countDocuments();
+
+    // Fetch total number of active resorts
+    const activeResorts = await Resort.countDocuments({ available: true });
+
+    // Fetch recent resorts (e.g., last 10 resorts added)
+    const recentResorts = await Resort.find().sort({ createdAt: -1 }).limit(10);
+
+    // Fetch recent users (e.g., last 10 users registered)
+    const recentUsers = await User.find().sort({ createdAt: -1 }).limit(10).select('-password');
+
+    // Send the dashboard data as response
+    res.json({
+      totalUsers,
+      totalResorts,
+      activeResorts,
+      recentResorts,
+      recentUsers
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard data:', error);
+    res.status(500).json({ message: 'Failed to fetch dashboard data.' });
+  }
 });
+
 
 app.post('/upload', upload.array('files'), async (req, res) => {
   try {
@@ -363,54 +468,82 @@ app.post('/auth/register', async (req, res) => {
 
 app.post('/auth/login', async (req, res) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ email });
-  if (!user || !await bcrypt.compare(password, user.password)) {
-    return res.status(400).json({ message: 'Invalid credentials' });
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+
+    if (!password || !user.password) {
+      console.error('Missing password:', { password, userPassword: user.password });
+      return res.status(400).json({ message: 'Password is required' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({ message: 'بيانات الدخول غبر صحيحة يرجى المحاولة مرة اخرى' });
+    }
+
+    if (user.googleId) {  // Assuming you have a `googleId` field in your user schema
+      return res.status(400).json({ message: 'هذه البريد الكتروني مستخدم في جوجل يرجى الدخول عن طريق جوجل' });
+    }
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token, role: user.role, userId: user._id });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'An error occurred during login' });
   }
-  const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-  res.json({ token, role: user.role, userId: user._id });
 });
+
 
 // Google OAuth routes
 app.get('/auth/google', (req, res, next) => {
-  req.session.role = req.query.role;
-  next();
-}, passport.authenticate('google', { scope: ['profile', 'email'] }));
+  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+});
 
-app.get('/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: '/login' }),
-  async (req, res) => {
-    if (!req.user.role) {
-      req.user.role = req.session.role;
-      await req.user.save();
-    }
+// Handle Google OAuth callback
+app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), async (req, res) => {
+  if (!req.user) {
+    // Store profile data in session
+    req.session.newUser = req.authInfo.profile;
+    res.redirect('/select-role');
+  } else {
     const token = jwt.sign({ id: req.user._id, role: req.user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.redirect(`http://localhost:3000?token=${token}&role=${req.user.role}&userId=${req.user._id}`);
   }
-);
+});
 
 // Facebook OAuth routes
 app.get('/auth/facebook', (req, res, next) => {
-  req.session.role = req.query.role;
-  next();
-}, passport.authenticate('facebook', { scope: ['email'] }));
+  passport.authenticate('facebook', { scope: ['email'] })(req, res, next);
+});
 
-app.get('/auth/facebook/callback',
-  passport.authenticate('facebook', { failureRedirect: '/login' }),
-  async (req, res) => {
-    if (!req.user.role) {
-      req.user.role = req.session.role;
-      await req.user.save();
-    }
+// Handle Facebook OAuth callback
+app.get('/auth/facebook/callback', passport.authenticate('facebook', { failureRedirect: '/login' }), async (req, res) => {
+  if (!req.user) {
+    // Store profile data in session
+    req.session.newUser = req.authInfo.profile;
+    res.redirect('/select-role');
+  } else {
     const token = jwt.sign({ id: req.user._id, role: req.user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.redirect(`http://localhost:3000?token=${token}&role=${req.user.role}&userId=${req.user._id}`);
   }
-);
+});
+
+
+
+
+
+
 
 // Backend route for fetching resorts with owner information populated
 app.get('/resorts', async (req, res) => {
   try {
-    const { name, location, minPrice, maxPrice, available } = req.query;
+    const { name, location, sequence, minPrice, maxPrice, available } = req.query;
     const query = {};
 
     if (name) {
@@ -419,17 +552,19 @@ app.get('/resorts', async (req, res) => {
     if (location) {
       query.location = location;
     }
+    if (sequence) {
+      query.sequence =  sequence;
+    }
 
     // Adjust the query to handle price ranges
-    const priceQuery = {};
-    if (minPrice) {
-      priceQuery.$gte = parseFloat(minPrice);
-    }
-    if (maxPrice) {
-      priceQuery.$lte = parseFloat(maxPrice);
-    }
-    if (Object.keys(priceQuery).length > 0) {
-      query.price = priceQuery;
+    if (minPrice || maxPrice) {
+      query.$or = [];
+      if (minPrice) {
+        query.$or.push({ minPrice: { $lte: parseInt(minPrice) } });
+      }
+      if (maxPrice) {
+        query.$or.push({ maxPrice: { $lte: parseInt(maxPrice) } });
+      }
     }
 
     if (available !== undefined) {
@@ -450,18 +585,24 @@ app.get('/resorts', async (req, res) => {
 
 app.get('/resorts/:id', async (req, res) => {
   try {
+    console.log(`Fetching resort with ID: ${req.params.id}`);
     const resort = await Resort.findById(req.params.id)
       .populate('owner', 'username profilePicture')
       .populate('comments.user', 'username profilePicture');
+
     if (!resort) {
+      console.log(`Resort with ID ${req.params.id} not found`);
       return res.status(404).json({ message: 'Resort not found' });
     }
+
+    console.log('Resort fetched successfully:', resort);
     res.json(resort);
   } catch (error) {
     console.error('Error fetching resort:', error);
     res.status(500).json({ message: error.message });
   }
 });
+
 
 // Backend endpoint to fetch resorts
 app.get('/resorts', async (req, res) => {
@@ -476,10 +617,11 @@ app.get('/resorts', async (req, res) => {
 });
 
 
-// Add resort endpoint
-app.post('/resorts', authMiddleware('owner'), async (req, res) => {
+// Add resort endpoint for both admin and user
+app.post('/resorts', authMiddleware(['admin', 'user']), async (req, res) => {
   try {
-    const { name, phone, location, locationLink, description, images, videos, photoBanner, minPrice, maxPrice, rating } = req.body;
+    const { name, phone, location, locationLink, description, images, videos, photoBanner, minPrice, maxPrice, rating, available } = req.body;
+    const sequence = await getNextSequence('resortId');
     const newResort = new Resort({
       name,
       phone,
@@ -488,11 +630,13 @@ app.post('/resorts', authMiddleware('owner'), async (req, res) => {
       description,
       images,
       videos,
+      available,
       photoBanner,
       minPrice,
       maxPrice,
       rating,
-      owner: req.userId
+      owner: req.userId,
+      sequence
     });
     await newResort.save();
     res.status(201).json(newResort);
@@ -568,7 +712,7 @@ app.get('/resorts/:id/comments', async (req, res) => {
 });
 
 // Fetch resorts for the logged-in owner
-app.get('/myresorts', authMiddleware('owner'), async (req, res) => {
+app.get('/myresorts', authMiddleware(['user', 'admin']), async (req, res) => {
   try {
     const resorts = await Resort.find({ owner: req.userId }).populate('owner', 'username profilePicture');
     res.json(resorts);
@@ -578,32 +722,58 @@ app.get('/myresorts', authMiddleware('owner'), async (req, res) => {
   }
 });
 
-// Update a resort
-app.put('/resorts/:id', authMiddleware(['owner', 'admin']), async (req, res) => {
+
+// Update routes accordingly
+app.post('/resorts', authMiddleware(['admin , user']), async (req, res) => {
   try {
-    const { id } = req.params;
-    const { userId, userRole } = req;  // Ensure role is accessed correctly
-
-    // Log the role and ID for debugging
-    console.log(`Updating resort ID: ${id} by user ID: ${userId} with role: ${userRole}`);
-
-    const query = userRole === 'admin' ? { _id: id } : { _id: id, owner: userId };
-    console.log('Query:', query);
-
-    const resort = await Resort.findOneAndUpdate(query, req.body, { new: true });
-
-    if (!resort) {
-      console.log('Resort not found or not owned by the user.');
-      return res.status(404).json({ message: 'Resort not found or not owned by the user.' });
-    }
-
-    res.json(resort);
+    const { name, phone, location, locationLink, description, images, videos, photoBanner, minPrice, maxPrice, rating, available } = req.body;
+    const sequence = await getNextSequence('resortId');
+    const newResort = new Resort({
+      name,
+      phone,
+      location,
+      locationLink,
+      description,
+      images,
+      videos, 
+      available,
+      photoBanner,
+      minPrice,
+      maxPrice,
+      rating,
+      owner: req.userId,
+      sequence
+    });
+    await newResort.save();
+    res.status(201).json(newResort);
   } catch (error) {
-    console.error('Error updating resort:', error);
-    res.status(500).json({ message: 'Failed to update resort.' });
+    console.error('Error creating resort:', error);
+    res.status(500).json({ message: 'Failed to create resort.' });
   }
 });
 
+// Remove user profile picture
+app.delete('/users/:id/profile-picture', authMiddleware(['admin', 'user']), async (req, res) => {
+  try {
+    if (req.params.id !== req.userId && req.userRole !== 'admin') {
+      return res.status(403).json({ message: 'You are not authorized to perform this action.' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Clear the profile picture URL
+    user.profilePicture = null;
+    await user.save();
+
+    res.json({ message: 'Profile picture removed successfully.' });
+  } catch (error) {
+    console.error('Error removing profile picture:', error);
+    res.status(500).json({ message: 'Failed to remove profile picture.' });
+  }
+});
 
 app.delete('/users/:id', authMiddleware('admin'), async (req, res) => {
   try {
@@ -632,9 +802,12 @@ app.delete('/users/:id', authMiddleware('admin'), async (req, res) => {
 
 
 // Delete a resort
-app.delete('/resorts/:id', authMiddleware('owner'), async (req, res) => {
+app.delete('/resorts/:id', authMiddleware(['user', 'admin']), async (req, res) => {
   try {
-    const resort = await Resort.findOneAndDelete({ _id: req.params.id, owner: req.userId });
+    const resort = req.userRole === 'admin'
+      ? await Resort.findByIdAndDelete(req.params.id)
+      : await Resort.findOneAndDelete({ _id: req.params.id, owner: req.userId });
+
     if (!resort) {
       return res.status(404).json({ message: 'Resort not found or not owned by the user.' });
     }

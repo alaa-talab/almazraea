@@ -7,10 +7,8 @@ import Login from './components/Login';
 import AddResort from './components/AddResort';
 import Resorts from './components/Resorts';
 import AdminDashboard from './components/AdminDashboard';
-import SelectRole from './components/SelectRole';
 import UserProfile from './components/UserProfile';
 import ResortDetail from './components/ResortDetail';
-import MyResorts from './components/MyResorts';
 import EditResort from './components/EditResort';
 import VerifyEmail from './components/VerifyEmail';
 import VerifyPhone from './components/VerifyPhone';
@@ -21,6 +19,8 @@ import EditUser from './components/EditUser';
 import CPAdmin from './components/CPAdmin'; // Ensure this is the correct path and name
 import NotFound from './components/NotFound';
 import ProtectedRoute from './components/ProtectedRoute'; // Assuming you have created this component
+import MyResorts from './components/MyResorts'; // Import MyResorts component
+import Breadcrumb from './components/Breadcrumb'; // Import Breadcrumb component
 
 const App = () => {
   return (
@@ -35,7 +35,7 @@ const logout = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('role');
   localStorage.removeItem('userId');
-  window.location.href = '/ '; // Adjust the path to your login route
+  window.location.href = '/'; // Adjust the path to your login route
 };
 
 // Axios global response interceptor to handle session expiration
@@ -59,6 +59,7 @@ const AppRoutes = () => {
   const [user, setUser] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const [breadcrumbs, setBreadcrumbs] = useState([]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -84,89 +85,111 @@ const AppRoutes = () => {
     }
   }, [location, navigate]);
 
+  useEffect(() => {
+    // Define breadcrumbs based on location.pathname
+    const path = location.pathname;
+    const newBreadcrumbs = [];
+
+    if (path !== '/' && path !== '/resorts') {
+      newBreadcrumbs.push({ label: 'Home', path: '/' });
+      if (path.startsWith('/resorts/')) {
+        newBreadcrumbs.push({ label: 'Resorts', path: '/resorts' });
+      }
+      if (path.includes('/edit-resort/')) {
+        newBreadcrumbs.push({ label: 'Edit Resort', path: '' });
+      }
+      // Add more dynamic breadcrumbs based on the path
+      newBreadcrumbs.push({ label: path.split('/').pop().replace(/-/g, ' '), path: '' });
+    }
+
+    setBreadcrumbs(newBreadcrumbs);
+  }, [location]);
+
   const handleLogout = () => {
     logout();
     setUser(null);
   };
 
   return (
-    <Routes>
-      <Route path="/" element={<HomePage user={user} setUser={setUser} onLogout={handleLogout} />} />
-      <Route path="/register" element={<Register setUser={setUser} />} />
-      <Route path="/login" element={<Login setUser={setUser} />} />
-      <Route path="/resorts" element={<Resorts />} />
-      <Route path="/select-role" element={<SelectRole />} />
-      <Route 
-        path="/add-resort" 
-        element={
-          <ProtectedRoute user={user} allowedRoles={['owner', 'admin']}>
-            <AddResort user={user} />
-          </ProtectedRoute>
-        } 
-      />
-      <Route path="/cp-admin" element={<CPAdmin setAdmin={setUser} />} />
-      <Route 
-        path="/cp-admin/dashboard" 
-        element={
-          <ProtectedRoute user={user} allowedRoles={['admin']}>
-            <AdminDashboard onLogout={handleLogout} />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/cp-admin/manage-resorts" 
-        element={
-          <ProtectedRoute user={user} allowedRoles={['admin']}>
-            <ManageResorts />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/cp-admin/manage-users" 
-        element={
-          <ProtectedRoute user={user} allowedRoles={['admin']}>
-            <ManageUsers />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/cp-admin/edit-user/:id" 
-        element={
-          <ProtectedRoute user={user} allowedRoles={['admin']}>
-            <EditUser />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/cp-admin/homepage-settings" 
-        element={
-          <ProtectedRoute user={user} allowedRoles={['admin']}>
-            <HomepageSettings />
-          </ProtectedRoute>
-        } 
-      />
-      <Route path="/user-profile/:id" element={<UserProfile user={user} setUser={setUser} />} />
-      <Route path="/resorts/:id" element={<ResortDetail user={user} />} />
-      <Route 
-        path="/myresorts" 
-        element={
-          <ProtectedRoute user={user} allowedRoles={['owner', 'admin']}>
-            <MyResorts user={user} />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/edit-resort/:id" 
-        element={
-          <ProtectedRoute user={user} allowedRoles={['owner', 'admin']}>
-            <EditResort user={user} />
-          </ProtectedRoute>
-        } 
-      />
-      <Route path="/verify-email/:token" element={<VerifyEmail />} />
-      <Route path="/verify-phone/:token" element={<VerifyPhone />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <div>
+      {location.pathname !== '/' && location.pathname !== '/resorts' && <Breadcrumb breadcrumbs={breadcrumbs} />}
+      <Routes>
+        <Route path="/" element={<HomePage user={user} setUser={setUser} onLogout={handleLogout} />} />
+        <Route path="/register" element={<Register setUser={setUser} />} />
+        <Route path="/login" element={<Login setUser={setUser} />} />
+        <Route path="/resorts" element={<Resorts user={user} setUser={setUser} onLogout={handleLogout} />} />
+        <Route 
+          path="/add-resort" 
+          element={
+            <ProtectedRoute user={user} allowedRoles={['admin', 'user']}>
+              <AddResort user={user} />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/myresorts" 
+          element={
+            <ProtectedRoute user={user} allowedRoles={['admin', 'user']}>
+              <MyResorts user={user} />
+            </ProtectedRoute>
+          } 
+        />
+        <Route path="/cp-admin" element={<CPAdmin setAdmin={setUser} />} />
+        <Route 
+          path="/cp-admin/dashboard" 
+          element={
+            <ProtectedRoute user={user} allowedRoles={['admin']}>
+              <AdminDashboard onLogout={handleLogout} />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/cp-admin/manage-resorts" 
+          element={
+            <ProtectedRoute user={user} allowedRoles={['admin']}>
+              <ManageResorts />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/cp-admin/manage-users" 
+          element={
+            <ProtectedRoute user={user} allowedRoles={['admin']}>
+              <ManageUsers />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/cp-admin/edit-user/:id" 
+          element={
+            <ProtectedRoute user={user} allowedRoles={['admin']}>
+              <EditUser />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/cp-admin/homepage-settings" 
+          element={
+            <ProtectedRoute user={user} allowedRoles={['admin']}>
+              <HomepageSettings />
+            </ProtectedRoute>
+          } 
+        />
+        <Route path="/user-profile/:id" element={<UserProfile user={user} setUser={setUser} />} />
+        <Route path="/resorts/:id" element={<ResortDetail user={user} />} />
+        <Route 
+          path="/edit-resort/:id" 
+          element={
+            <ProtectedRoute user={user} allowedRoles={['admin', 'user']}>
+              <EditResort user={user} />
+            </ProtectedRoute>
+          } 
+        />
+        <Route path="/verify-email/:token" element={<VerifyEmail />} />
+        <Route path="/verify-phone/:token" element={<VerifyPhone />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </div>
   );
 };
 

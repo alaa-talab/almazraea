@@ -27,13 +27,22 @@ passport.use(new GoogleStrategy({
       user = new User({
         email: profile.emails[0].value,
         username: profile.displayName,
-        profilePicture: profile.photos[0].value
+        profilePicture: profile.photos[0].value,
+        role: 'user' , // Default role, will be updated on first login
+        googleId: profile.id
       });
       await user.save();
+    } else {
+      // Update the user record with Google ID if it doesn't have one
+      if (!user.googleId) {
+        user.googleId = profile.id;
+        await user.save();
+      }
     }
-    done(null, user);
+    console.log('Authenticated user:', user);
+    return done(null, user);
   } catch (err) {
-    done(err, false);
+    return done(err, false);
   }
 }));
 
@@ -49,12 +58,14 @@ passport.use(new FacebookStrategy({
       user = new User({
         email: profile.emails[0].value,
         username: profile.displayName,
-        profilePicture: profile.photos[0].value
+        profilePicture: profile.photos[0].value,
+        role: 'user'  // Default role, will be updated on first login
       });
       await user.save();
     }
-    done(null, user);
+    console.log('Authenticated user:', user);
+    return done(null, user);
   } catch (err) {
-    done(err, false);
+    return done(err, false);
   }
 }));

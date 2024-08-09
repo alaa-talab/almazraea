@@ -20,8 +20,10 @@ const resortSchema = new Schema({
   maxPrice: { type: Number },
   rating: { type: Number, required: true },
   owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  available: { type: Boolean}, // New property
-  comments: [commentSchema]
+  available: { type: Boolean }, // New property
+  comments: [commentSchema],
+  sequence: { type: Number, unique: true },
+  homepage: { type: Boolean, default: false } // New property for homepage
 }, { timestamps: true });
 
 const Resort = mongoose.model('Resort', resortSchema);

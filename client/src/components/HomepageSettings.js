@@ -43,7 +43,16 @@ const HomepageSettings = () => {
 
   const handleSave = async () => {
     try {
-      await axios.post('http://localhost:5000/homepage-resorts', { resorts: selectedResorts });
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('No token found');
+        return;
+      }
+      await axios.post('http://localhost:5000/homepage-resorts', { resorts: selectedResorts }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       alert('تم حفظ إعدادات الصفحة الرئيسية بنجاح.');
     } catch (error) {
       console.error('Error saving homepage settings:', error);
