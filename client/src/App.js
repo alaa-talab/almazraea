@@ -21,6 +21,12 @@ import NotFound from './components/NotFound';
 import ProtectedRoute from './components/ProtectedRoute'; // Assuming you have created this component
 import MyResorts from './components/MyResorts'; // Import MyResorts component
 import Breadcrumb from './components/Breadcrumb'; // Import Breadcrumb component
+import ContentPolicy from './components/ContentPolicy';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfUse from './components/TermsOfUse';
+import ContactUs from './components/ContactUs';
+import AboutFarm from './components/AboutFarm';
+
 
 const App = () => {
   return (
@@ -187,6 +193,11 @@ const AppRoutes = () => {
         />
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
         <Route path="/verify-phone/:token" element={<VerifyPhone />} />
+        <Route path="/content-policy" element={<ContentPolicy />} />
+  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+  <Route path="/terms-of-use" element={<TermsOfUse />} />
+  <Route path="/contact-us" element={<ContactUs />} />
+  <Route path="/about-farm" element={<AboutFarm />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>

@@ -190,8 +190,8 @@ function EditResort({ user }) {
   }
 
   return (
-    <div>
-      <form onSubmit={handleSubmit} className="space-y-4 max-w-3xl mx-auto p-4 bg-white rounded shadow-md">
+    <div className="py-4">
+      <form onSubmit={handleSubmit} className="space-y-4 max-w-3xl mx-auto p-4 bg-white rounded shadow-md font-arabic rtl">
         {processing && <p>Processing...</p>}
         {error && <p className="text-red-500">{error}</p>}
         <div>

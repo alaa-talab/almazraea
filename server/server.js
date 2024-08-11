@@ -15,6 +15,7 @@ const Resort = require('./models/Resort');
 const User = require('./models/User');
 const Comment = require('./models/Comment');
 const Counter = require('./models/Counter');
+const nodemailer = require('nodemailer');
 require('./passportConfig');
 
 
@@ -53,6 +54,15 @@ const getNextSequence = async (name) => {
   return counter.seq;
 };
 
+// Create a transporter object using SMTP transport
+const transporter = nodemailer.createTransport({
+  service: 'Gmail', // Use your email service provider
+  auth: {
+    user: process.env.EMAIL_USER, // Your email address
+    pass: process.env.EMAIL_PASS  // Your email password or app password
+  }
+});
+
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const uploadFileToCloudinary = (fileBuffer, resourceType) => {
@@ -76,7 +86,7 @@ const authMiddleware = (requiredRoles = []) => {
       return res.status(401).json({ message: 'لم يتم توفير الرمز' });
     }
     const token = authHeader.split(' ')[1];
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    jwt.verify(token, process.env.JWT_SECRET, { ignoreExpiration: true }, (err, decoded) => {
       if (err) {
         const message = err.name === 'TokenExpiredError' ? 'انتهت صلاحية الجلسة' : 'فشل في المصادقة على الرمز';
         return res.status(401).json({ message });
@@ -90,6 +100,8 @@ const authMiddleware = (requiredRoles = []) => {
     });
   };
 };
+
+module.exports = authMiddleware;
 
 
 
@@ -200,6 +212,27 @@ app.post('/homepage-resorts', authMiddleware('admin'), async (req, res) => {
   }
 });
 
+app.post('/contact', async (req, res) => {
+  const { name, email, message } = req.body;
+
+  try {
+    // Set up email data
+    const mailOptions = {
+      from: process.env.EMAIL_USER, // sender address
+      to: 'alaatalab99@gmail.com',  // list of receivers
+      subject: 'New Contact Form almazraea  ', // Subject line
+      text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}` // plain text body
+    };
+
+    // Send email
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ message: 'Message sent successfully' });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    res.status(500).json({ message: 'Failed to send message' });
+  }
+});
 
 
 // Add resort endpoint for admin

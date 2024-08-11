@@ -27,10 +27,10 @@ const HomePage = ({ user, setUser, onLogout }) => {
             <img src="https://res.cloudinary.com/dvcfefmys/image/upload/v1718994491/almazraea_Logo_white-01_ntdzfs.png" alt="Logo" className="h-14" />
           </Link>
           <ul className="flex flex-col md:flex-row md:space-x-8">
-            <li><Link to="/about" className="hover:underline pl-6">عن المزرعة</Link></li>
-            <li><Link to="/contact" className="hover:underline">اتصل بنا</Link></li>
-            <li><Link to="/terms" className="hover:underline">إتفاقية الاستخدام</Link></li>
-            <li><Link to="/privacy" className="hover:underline">سياسة الخصوصية</Link></li>
+            <li><Link to="/about-farm" className="hover:underline pl-6">عن المزرعة</Link></li>
+            <li><Link to="/contact-us" className="hover:underline">اتصل بنا</Link></li>
+            <li><Link to="/terms-of-use" className="hover:underline">إتفاقية الاستخدام</Link></li>
+            <li><Link to="/privacy-policy" className="hover:underline">سياسة الخصوصية</Link></li>
             <li><Link to="/content-policy" className="hover:underline">سياسة المحتوى</Link></li>
           </ul>
         </div>
