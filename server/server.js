@@ -41,8 +41,8 @@ const upload = multer({ storage });
 const ADMIN_ID = new mongoose.Types.ObjectId(); // Use a valid ObjectId
 
 const ADMIN_CREDENTIALS = {
-  username: 'admin',
-  password: 'Admin123$',
+  username: process.env.ADMIN_USERBANE,
+  password: process.env.ADMIN_PASSWORD,
 };
 
 const getNextSequence = async (name) => {
