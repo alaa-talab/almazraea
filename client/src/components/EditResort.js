@@ -39,7 +39,7 @@ function EditResort({ user }) {
         }
 
         console.log(`Fetching resort with ID: ${id}`);
-        const response = await axios.get(`http://localhost:5000/resorts/${id}`, {
+        const response = await axios.get(`https://www.almazraea.com/api/resorts/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -97,14 +97,14 @@ function EditResort({ user }) {
       const token = localStorage.getItem('token');
       console.log('Updating resort with data:', updatedResort);
 
-      await axios.put(`http://localhost:5000/resorts/${id}`, updatedResort, {
+      await axios.put(`https://www.almazraea.com/api/resorts/${id}`, updatedResort, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
 
       if (user?.role === 'admin') {
-        await axios.put(`http://localhost:5000/resorts/${id}/rate`, { rating }, {
+        await axios.put(`https://www.almazraea.com/api/resorts/${id}/rate`, { rating }, {
           headers: {
             Authorization: `Bearer ${token}`
           }

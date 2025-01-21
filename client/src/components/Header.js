@@ -20,7 +20,7 @@ const Header = ({ user, onLogout }) => {
         try {
           const token = localStorage.getItem('token');
           if (!token) return;
-          const response = await axios.get(`http://localhost:5000/user/${user.userId}`, {
+          const response = await axios.get(`https://www.almazraea.com/api/user/${user.userId}`, {
             headers: {
               Authorization: `Bearer ${token}`
             }

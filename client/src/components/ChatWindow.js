@@ -10,7 +10,7 @@ const ChatWindow = ({ user, onClose }) => {
   useEffect(() => {
     const fetchChats = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/user/${user.userId}/chats`, {
+        const response = await axios.get(`https://www.almazraea.com/api/user/${user.userId}/chats`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         setChats(response.data);
@@ -23,7 +23,7 @@ const ChatWindow = ({ user, onClose }) => {
 
   const openChat = async (chatId) => {
     try {
-      const response = await axios.get(`http://localhost:5000/chat/${chatId}`, {
+      const response = await axios.get(`https://www.almazraea.com/api/chat/${chatId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setActiveChat(response.data);
@@ -62,7 +62,7 @@ const ChatWindow = ({ user, onClose }) => {
     if (!message) return;
 
     try {
-      const response = await axios.post(`http://localhost:5000/chat/${activeChat._id}/message`, { text: message }, {
+      const response = await axios.post(`https://www.almazraea.com/api/chat/${activeChat._id}/message`, { text: message }, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setMessage('');

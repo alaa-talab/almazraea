@@ -10,7 +10,7 @@ const VerifyPhone = () => {
   useEffect(() => {
     const verifyPhone = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/verify-phone/${token}`);
+        const response = await axios.get(`https://www.almazraea.com/api/verify-phone/${token}`);
         setMessage(response.data);
         setTimeout(() => navigate('/login'), 3000); // Redirect to login after 3 seconds
       } catch (error) {

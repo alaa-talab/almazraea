@@ -22,7 +22,7 @@ const EditUser = () => {
           setError('No token found');
           return;
         }
-        const response = await axios.get(`http://localhost:5000/users/${id}`, {
+        const response = await axios.get(`https://www.almazraea.com/api/users/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -53,7 +53,7 @@ const EditUser = () => {
       if (newProfilePicture) {
         formData.append('profilePicture', newProfilePicture);
       }
-      await axios.put(`http://localhost:5000/users/${id}`, formData, {
+      await axios.put(`https://www.almazraea.com/api/users/${id}`, formData, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -70,7 +70,7 @@ const EditUser = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/users/${id}/profile-picture`, {
+      await axios.delete(`https://www.almazraea.com/api/users/${id}/profile-picture`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

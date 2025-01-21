@@ -50,7 +50,7 @@ function AddResort({ user }) {
         owner: locationState?.userId, // Ensure owner is set correctly
       };
 
-      await axios.post('http://localhost:5000/resorts', newResort, {
+      await axios.post('https://www.almazraea.com/api/resorts', newResort, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }

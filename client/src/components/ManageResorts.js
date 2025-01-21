@@ -16,7 +16,7 @@ const ManageResorts = () => {
   useEffect(() => {
     const fetchResorts = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/resorts');
+        const response = await axios.get('https://www.almazraea.com/api/resorts');
         setResorts(response.data);
         setFilteredResorts(response.data); // Initialize filteredResorts
       } catch (error) {
@@ -46,7 +46,7 @@ const ManageResorts = () => {
         setError('No token found');
         return;
       }
-      await axios.delete(`http://localhost:5000/resorts/${id}`, {
+      await axios.delete(`https://www.almazraea.com/api/resorts/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

@@ -24,7 +24,7 @@ const Chat = ({ user, chatRoom }) => {
 
   const fetchMessages = useCallback(async () => {
     try {
-      const response = await fetch(`http://localhost:5000/chat/${chatRoom}/messages`, {
+      const response = await fetch(`https://www.almazraea.com/api/chat/${chatRoom}/messages`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -50,7 +50,7 @@ const Chat = ({ user, chatRoom }) => {
     e.preventDefault();
     if (message.trim()) {
       try {
-        const response = await fetch(`http://localhost:5000/chat/${chatRoom}/message`, {
+        const response = await fetch(`https://www.almazraea.com/api/chat/${chatRoom}/message`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

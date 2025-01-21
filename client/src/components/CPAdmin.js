@@ -21,7 +21,7 @@ const CPAdmin = ({ setAdmin }) => {
     }
 
     try {
-      const response = await axios.post('http://localhost:5000/admin/login', {
+      const response = await axios.post('https://www.almazraea.com/api/admin/login', {
         username,
         password,
         rememberMe

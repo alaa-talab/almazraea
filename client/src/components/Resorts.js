@@ -49,7 +49,7 @@ function Resorts({ user, onLogout }) {
   useEffect(() => {
     const fetchResorts = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/resorts');
+        const response = await axios.get('https://www.almazraea.com/api/resorts');
         setResorts(response.data);
         setLoading(false);
       } catch (error) {
@@ -63,7 +63,7 @@ function Resorts({ user, onLogout }) {
 
   const handleSearch = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/resorts', {
+      const response = await axios.get('https://www.almazraea.com/api/resorts', {
         params: { name, location, minPrice, maxPrice }
       });
       setResorts(response.data);
@@ -152,7 +152,7 @@ function Resorts({ user, onLogout }) {
         </div>
       </div>
 
-      <section className="container isolate mx-auto mt-0 pr-4 pl-4 pt-20 pb-20">
+      <section className="container isolate mx-auto mt-0 pr-4 pl-4 pt-96 pb-20 md:pt-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {resorts.map(resort => (
             <div key={resort._id} className="bg-white rounded shadow-lg overflow-hidden transform hover:scale-105 transition duration-300">
@@ -161,10 +161,14 @@ function Resorts({ user, onLogout }) {
               </LazyLoad>
               <div className="p-4">
                 <h3 className="text-2xl font-bold text-pink-600">{resort.name}</h3>
-                <h4 className="mt-2 text-gray-600">{resort.description}</h4>
+                <h4 className="mt-2 text-gray-600 truncate-2-lines">{resort.description}</h4>
+                    <Link to={`/resorts/${resort._id}`} className="text-pink-600 hover:underline">قراءة المزيد</Link>
                 <div className='flex items-center mt-2'>
-                <FaMapMarkerAlt className="text-ed0056 ml-2 text-pink-600 " />
-                <p className='mt-2 text-gray-600 font-bold'>الموقع: <span className='mt-2 font-normal'>{resort.location}</span> </p>
+                  <FaMapMarkerAlt className="text-ed0056 ml-2 text-pink-600" />
+                  <p className='mt-2 text-gray-600 font-bold'>الموقع: <span className='mt-2 font-normal'>{resort.location}</span></p>
+                  </div>
+                <div className='flex items-center mt-2 px-0'>
+                <p className="mt-2 text-gray-600 font-extrabold"><FaDollarSign className="inline-block mb-1 text-pink-600" /> متوسط السعر: <span className='mt-2 font-semibold'>{((resort.minPrice + resort.maxPrice) / 2).toFixed(2)}  دينار</span></p>
                 </div>
                 <div className="flex items-center mt-4">
                   <img
@@ -173,11 +177,15 @@ function Resorts({ user, onLogout }) {
                     className="h-8 w-8 rounded-full"
                   />
                   <div className='px-2'>
-                  <Link to={`/user-profile/${resort.owner._id}`} className="ml-2 text-gray-600 hover:text-pink-600"> <span className="ml-2 text-black-800 font-medium ">{resort.owner?.username}</span></Link>
+                    <Link to={`/user-profile/${resort.owner._id}`} className="ml-2 text-gray-600 hover:text-pink-600"> <span className="ml-2 text-black-800 font-medium">{resort.owner?.username}</span></Link>
                   </div>
+              
+                  
+                    
+               
                 </div>
                 <p className="mt-2 py-3 font-bold">
-                  حالة التوفر: <span className={resort.available ? 'text-green-600 px-1' : 'text-red-600 px-1 '}>{resort.available ? 'متاح' : 'غير متاح'}</span>
+                  حالة التوفر: <span className={resort.available ? 'text-green-600 px-1' : 'text-red-600 px-1'}>{resort.available ? 'متاح' : 'غير متاح'}</span>
                 </p>
                 <Link to={`/resorts/${resort._id}`} className="mt-2 inline-block bg-pink-600 text-white py-2 px-4 rounded hover:bg-pink-800 transition duration-300">
                   اكتشف المزيد

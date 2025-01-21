@@ -10,7 +10,7 @@ const VerifyEmail = () => {
   useEffect(() => {
     const verifyEmail = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/verify-email/${token}`);
+        const response = await axios.get(`https://www.almazraea.com/api/verify-email/${token}`);
         setMessage(response.data);
         setTimeout(() => navigate('/login'), 3000); // Redirect to login after 3 seconds
       } catch (error) {

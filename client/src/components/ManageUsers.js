@@ -20,7 +20,7 @@ const ManageUsers = () => {
           return;
         }
 
-        const response = await axios.get('http://localhost:5000/users', {
+        const response = await axios.get('https://www.almazraea.com/api/users', {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -40,7 +40,7 @@ const ManageUsers = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:5000/users', newUser, {
+      const response = await axios.post('https://www.almazraea.com/api/users', newUser, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -58,7 +58,7 @@ const ManageUsers = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/users/${userId}`, {
+      await axios.delete(`https://www.almazraea.com/api/users/${userId}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

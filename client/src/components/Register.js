@@ -40,7 +40,7 @@ const Register = ({ setUser }) => {
     }
 
     try {
-      const response = await axios.post('http://localhost:5000/auth/register', {
+      const response = await axios.post('https://www.almazraea.com/api/auth/register', {
         email,
         username,
         password,
@@ -63,11 +63,11 @@ const Register = ({ setUser }) => {
   };
 
   const proceedWithGoogleLogin = () => {
-    window.open(`http://localhost:5000/auth/google?role=${role}`, '_self');
+    window.open(`https://www.almazraea.com/api/auth/google?role=${role}`, '_self');
   };
 
   const proceedWithFacebookLogin = () => {
-    window.open(`http://localhost:5000/auth/facebook?role=${role}`, '_self');
+    window.open(`https://www.almazraea.com/api/auth/facebook?role=${role}`, '_self');
   };
 
   return (

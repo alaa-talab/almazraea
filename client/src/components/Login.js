@@ -13,7 +13,7 @@ const Login = ({ setUser }) => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:5000/auth/login', { email, password });
+      const response = await axios.post('https://www.almazraea.com/api/auth/login', { email, password });
       const { token, role, userId } = response.data;
       localStorage.setItem('token', token);
       localStorage.setItem('role', role);
@@ -31,11 +31,11 @@ const Login = ({ setUser }) => {
   };
 
   const proceedWithGoogleLogin = () => {
-    window.open(`http://localhost:5000/auth/google?role=${role}`, '_self');
+    window.open(`https://www.almazraea.com/api/auth/google?role=${role}`, '_self');
   };
 
   const proceedWithFacebookLogin = () => {
-    window.open(`http://localhost:5000/auth/facebook?role=${role}`, '_self');
+    window.open(`https://www.almazraea.com/api/auth/facebook?role=${role}`, '_self');
   };
 
   return (

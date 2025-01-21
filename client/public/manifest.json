@@ -1,19 +1,19 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "almazraea",
+  "name": "وجهتكم الأولى للبحث عن المزارع في الأردن",
   "icons": [
     {
-      "src": "favicon.ico",
+      "src": "almazraea-logo-icon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/x-icon"
     },
     {
-      "src": "logo192.png",
+      "src": "almazraea-logo-192-01.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "logo512.png",
+      "src": "almazraea-logo-512-01.png",
       "type": "image/png",
       "sizes": "512x512"
     }

@@ -21,7 +21,7 @@ const ResortDetail = ({ user }) => {
   useEffect(() => {
     const fetchResort = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/resorts/${id}`);
+        const response = await axios.get(`https://www.almazraea.com/api/resorts/${id}`);
         setResort(response.data);
         setComments(response.data.comments);
       } catch (error) {
@@ -43,7 +43,7 @@ const ResortDetail = ({ user }) => {
       const payload = { text: commentText, user: user.userId };
       const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` };
 
-      const response = await axios.post(`http://localhost:5000/resorts/${id}/comments`, payload, { headers });
+      const response = await axios.post(`https://www.almazraea.com/api/resorts/${id}/comments`, payload, { headers });
       setComments(response.data.comments);
       setCommentText('');
       setCurrentPage(1); // Reset to the first page after a new comment is added

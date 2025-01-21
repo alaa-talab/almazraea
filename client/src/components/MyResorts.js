@@ -18,7 +18,7 @@ const MyResorts = ({ user }) => {
         setError('No token found');
         return;
       }
-      await axios.delete(`http://localhost:5000/resorts/${id}`, {
+      await axios.delete(`https://www.almazraea.com/api/resorts/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -50,7 +50,7 @@ const MyResorts = ({ user }) => {
       }
 
       try {
-        const response = await axios.get('http://localhost:5000/myresorts', {
+        const response = await axios.get('https://www.almazraea.com/api/myresorts', {
           headers: {
             Authorization: `Bearer ${token}`
           }

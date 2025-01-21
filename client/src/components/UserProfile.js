@@ -24,7 +24,7 @@ const UserProfile = ({ user, setUser }) => {
           setTimeout(() => navigate('/login'), 3000); // Redirect after 3 seconds
           return;
         }
-        const response = await axios.get(`http://localhost:5000/user/${id}`, {
+        const response = await axios.get(`https://www.almazraea.com/api/user/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -57,7 +57,7 @@ const UserProfile = ({ user, setUser }) => {
       if (profilePicture) {
         formData.append('profilePicture', profilePicture);
       }
-      const response = await axios.put(`http://localhost:5000/user/${id}`, formData, {
+      const response = await axios.put(`https://www.almazraea.com/api/user/${id}`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'

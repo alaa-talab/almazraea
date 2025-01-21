@@ -51,7 +51,7 @@ const HomePage = ({ user, setUser, onLogout }) => {
   useEffect(() => {
     const fetchResorts = async () => {
       try {
-        const response = await axios.get('https://www.almazraea.com/api/homepage-resorts');
+        const response = await axios.get(0/homepage-resorts');
         const availableResorts = response.data.filter(resort => resort.available);
         setResorts(availableResorts);
       } catch (error) {
@@ -67,7 +67,7 @@ const HomePage = ({ user, setUser, onLogout }) => {
         try {
           const token = localStorage.getItem('token');
           if (!token) return;
-          const response = await axios.get(`https://www.almazraea.com/api/user/${user.userId}`, {
+          const response = await axios.get(`http://localhost:5000/user/${user.userId}`, {
             headers: {
               Authorization: `Bearer ${token}`
             }
@@ -86,7 +86,7 @@ const HomePage = ({ user, setUser, onLogout }) => {
 
   const handleSearch = async () => {
     try {
-      const response = await axios.get('https://www.almazraea.com/api/resorts', {
+      const response = await axios.get('http://localhost:5000/resorts', {
         params: { name, location, minPrice, maxPrice }
       });
       setResorts(response.data);

@@ -16,8 +16,8 @@ const User = require('./models/User');
 const Comment = require('./models/Comment');
 const Counter = require('./models/Counter');
 const nodemailer = require('nodemailer');
+const path = require('path');
 require('./passportConfig');
-
 
 dotenv.config();
 
@@ -29,6 +29,10 @@ app.use(cors());
 app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: false, cookie: { secure: false } }));
 app.use(passport.initialize());
 app.use(passport.session());
+app.use((req, res, next) => {
+  console.log('Request URL:', req.url);
+  next();
+});
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('Connected to MongoDB'))
@@ -44,6 +48,16 @@ const ADMIN_CREDENTIALS = {
   username: 'admin',
   password: 'Admin123$',
 };
+
+// CORS configuration
+const corsOptions = {
+  origin: 'https://www.almazraea.com', // Replace with your frontend's domain
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true, // Allow credentials (cookies, authorization headers)
+};
+
+app.use(cors(corsOptions));
 
 const getNextSequence = async (name) => {
   const counter = await Counter.findByIdAndUpdate(
@@ -103,8 +117,6 @@ const authMiddleware = (requiredRoles = []) => {
 
 module.exports = authMiddleware;
 
-
-
 // Define the admin user in your database (if not already present)
 const ensureAdminUserExists = async () => {
   try {
@@ -130,8 +142,21 @@ const ensureAdminUserExists = async () => {
 };
 ensureAdminUserExists();
 
+
+
+// Define API routes before the catch-all route
+app.get('/api/test', (req, res) => {
+  const data = {
+    message: 'Backend is working!',
+    someData: ['item1', 'item2', 'item3'],
+  };
+  res.json(data);
+});
+
+
+
 // Fetch all users
-app.get('/users', authMiddleware('admin'), async (req, res) => {
+app.get('/api/users', authMiddleware('admin'), async (req, res) => {
   try {
     const users = await User.find().select('-password');
     res.json(users);
@@ -142,7 +167,7 @@ app.get('/users', authMiddleware('admin'), async (req, res) => {
 });
 
 // Update user information
-app.put('/users/:id', authMiddleware('admin'), upload.single('profilePicture'), async (req, res) => {
+app.put('/api/users/:id', authMiddleware('admin'), upload.single('profilePicture'), async (req, res) => {
   try {
     const { password, role, username, email, phone } = req.body;
     const updates = { username, email, role, phone };
@@ -165,7 +190,7 @@ app.put('/users/:id', authMiddleware('admin'), upload.single('profilePicture'), 
 });
 
 // Add a new user
-app.post('/users', authMiddleware('admin'), async (req, res) => {
+app.post('/api/users', authMiddleware('admin'), async (req, res) => {
   const { email, username, password, phone, role } = req.body;
   try {
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
@@ -183,7 +208,7 @@ app.post('/users', authMiddleware('admin'), async (req, res) => {
 });
 
 // Fetch homepage resorts
-app.get('/homepage-resorts', async (req, res) => {
+app.get('/api/homepage-resorts', async (req, res) => {
   try {
     const homepageResorts = await Resort.find({ homepage: true }).populate('owner', 'username profilePicture');
     res.json(homepageResorts);
@@ -195,7 +220,7 @@ app.get('/homepage-resorts', async (req, res) => {
 
 
 // Update homepage resorts
-app.post('/homepage-resorts', authMiddleware('admin'), async (req, res) => {
+app.post('/api/homepage-resorts', authMiddleware('admin'), async (req, res) => {
   try {
     const { resorts } = req.body; // Expecting an array of resort IDs
 
@@ -212,7 +237,7 @@ app.post('/homepage-resorts', authMiddleware('admin'), async (req, res) => {
   }
 });
 
-app.post('/contact', async (req, res) => {
+app.post('/api/contact', async (req, res) => {
   const { name, email, message } = req.body;
 
   try {
@@ -236,7 +261,7 @@ app.post('/contact', async (req, res) => {
 
 
 // Add resort endpoint for admin
-app.post('/admin/add-resort', authMiddleware('admin'), async (req, res) => {
+app.post('/api/admin/add-resort', authMiddleware('admin'), async (req, res) => {
   try {
     const { name, phone, location, locationLink, description, images, videos, photoBanner, minPrice, maxPrice, rating, available, homepage } = req.body;
     const newResort = new Resort({
@@ -265,7 +290,7 @@ app.post('/admin/add-resort', authMiddleware('admin'), async (req, res) => {
 
 
 // Update resort rating
-app.put('/resorts/:id/rate', authMiddleware('admin'), async (req, res) => {
+app.put('/api/resorts/:id/rate', authMiddleware('admin'), async (req, res) => {
   try {
     const { rating } = req.body;
     const resort = await Resort.findByIdAndUpdate(req.params.id, { rating }, { new: true });
@@ -280,7 +305,7 @@ app.put('/resorts/:id/rate', authMiddleware('admin'), async (req, res) => {
 });
 
 // Update a resort
-app.put('/resorts/:id', authMiddleware(['user', 'admin']), async (req, res) => {
+app.put('/api/resorts/:id', authMiddleware(['user', 'admin']), async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -338,7 +363,7 @@ app.put('/resorts/:id', authMiddleware(['user', 'admin']), async (req, res) => {
 
 
 // Fetch user profile
-app.get('/user/:id', authMiddleware(), async (req, res) => {
+app.get('/api/user/:id', authMiddleware(), async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select('-password');
     if (!user) {
@@ -352,7 +377,7 @@ app.get('/user/:id', authMiddleware(), async (req, res) => {
 });
 
 // Update user profile
-app.put('/user/:id', authMiddleware(), upload.single('profilePicture'), async (req, res) => {
+app.put('/api/user/:id', authMiddleware(), upload.single('profilePicture'), async (req, res) => {
   try {
     if (req.params.id !== req.userId) {
       return res.status(403).json({ message: 'You are not authorized to update this profile.' });
@@ -377,7 +402,7 @@ app.put('/user/:id', authMiddleware(), upload.single('profilePicture'), async (r
 });
 
 // Fetch a single user
-app.get('/users/:id', authMiddleware('admin'), async (req, res) => {
+app.get('/api/users/:id', authMiddleware('admin'), async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select('-password');
     if (!user) {
@@ -391,7 +416,7 @@ app.get('/users/:id', authMiddleware('admin'), async (req, res) => {
 });
 
 // Admin login route
-app.post('/admin/login', (req, res) => {
+app.post('/api/admin/login', (req, res) => {
   const { username, password } = req.body;
   const adminCredentials = {
     username: 'admin',
@@ -421,7 +446,7 @@ const authenticateAdmin = (req, res, next) => {
 };
 
 // Example admin-only route
-app.get('/admin/dashboard', authenticateAdmin, async (req, res) => {
+app.get('/api/admin/dashboard', authenticateAdmin, async (req, res) => {
   try {
     // Fetch total number of users
     const totalUsers = await User.countDocuments();
@@ -453,7 +478,7 @@ app.get('/admin/dashboard', authenticateAdmin, async (req, res) => {
 });
 
 
-app.post('/upload', upload.array('files'), async (req, res) => {
+app.post('/api/upload', upload.array('files'), async (req, res) => {
   try {
     const urls = await Promise.all(
       req.files.map(file => uploadFileToCloudinary(file.buffer, file.mimetype.startsWith('image/') ? 'image' : 'video'))
@@ -465,11 +490,11 @@ app.post('/upload', upload.array('files'), async (req, res) => {
   }
 });
 
-app.get('/', (req, res) => {
+app.get('/api/', (req, res) => {
   res.send('Welcome to the Almazraea API');
 });
 
-app.post('/auth/register', async (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
   const { email, username, password, phone, role } = req.body;
   try {
     const existingUser = await User.findOne({ $or: [{ email }, { username }, { phone }] });
@@ -499,7 +524,7 @@ app.post('/auth/register', async (req, res) => {
   }
 });
 
-app.post('/auth/login', async (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
@@ -534,36 +559,36 @@ app.post('/auth/login', async (req, res) => {
 
 
 // Google OAuth routes
-app.get('/auth/google', (req, res, next) => {
+app.get('/api/auth/google', (req, res, next) => {
   passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
 });
 
 // Handle Google OAuth callback
-app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), async (req, res) => {
+app.get('/api/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), async (req, res) => {
   if (!req.user) {
     // Store profile data in session
     req.session.newUser = req.authInfo.profile;
     res.redirect('/select-role');
   } else {
     const token = jwt.sign({ id: req.user._id, role: req.user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.redirect(`http://localhost:3000?token=${token}&role=${req.user.role}&userId=${req.user._id}`);
+    res.redirect(`https://www.almazraea.com?token=${token}&role=${req.user.role}&userId=${req.user._id}`);
   }
 });
 
 // Facebook OAuth routes
-app.get('/auth/facebook', (req, res, next) => {
+app.get('/api/auth/facebook', (req, res, next) => {
   passport.authenticate('facebook', { scope: ['email'] })(req, res, next);
 });
 
 // Handle Facebook OAuth callback
-app.get('/auth/facebook/callback', passport.authenticate('facebook', { failureRedirect: '/login' }), async (req, res) => {
+app.get('/api/auth/facebook/callback', passport.authenticate('facebook', { failureRedirect: '/login' }), async (req, res) => {
   if (!req.user) {
     // Store profile data in session
     req.session.newUser = req.authInfo.profile;
     res.redirect('/select-role');
   } else {
     const token = jwt.sign({ id: req.user._id, role: req.user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.redirect(`http://localhost:3000?token=${token}&role=${req.user.role}&userId=${req.user._id}`);
+    res.redirect(`https://www.almazraea.com?token=${token}&role=${req.user.role}&userId=${req.user._id}`);
   }
 });
 
@@ -574,7 +599,7 @@ app.get('/auth/facebook/callback', passport.authenticate('facebook', { failureRe
 
 
 // Backend route for fetching resorts with owner information populated
-app.get('/resorts', async (req, res) => {
+app.get('/api/resorts', async (req, res) => {
   try {
     const { name, location, sequence, minPrice, maxPrice, available } = req.query;
     const query = {};
@@ -616,7 +641,7 @@ app.get('/resorts', async (req, res) => {
 });
 
 
-app.get('/resorts/:id', async (req, res) => {
+app.get('/api/resorts/:id', async (req, res) => {
   try {
     console.log(`Fetching resort with ID: ${req.params.id}`);
     const resort = await Resort.findById(req.params.id)
@@ -638,7 +663,7 @@ app.get('/resorts/:id', async (req, res) => {
 
 
 // Backend endpoint to fetch resorts
-app.get('/resorts', async (req, res) => {
+app.get('/api/resorts', async (req, res) => {
   try {
     // Fetch resorts data from your database
     const resorts = await Resort.find();
@@ -651,7 +676,7 @@ app.get('/resorts', async (req, res) => {
 
 
 // Add resort endpoint for both admin and user
-app.post('/resorts', authMiddleware(['admin', 'user']), async (req, res) => {
+app.post('/api/resorts', authMiddleware(['admin', 'user']), async (req, res) => {
   try {
     const { name, phone, location, locationLink, description, images, videos, photoBanner, minPrice, maxPrice, rating, available } = req.body;
     const sequence = await getNextSequence('resortId');
@@ -680,7 +705,7 @@ app.post('/resorts', authMiddleware(['admin', 'user']), async (req, res) => {
 });
 
 // Add a comment to a resort
-app.post('/resorts/:id/comments', authMiddleware(), async (req, res) => {
+app.post('/api/resorts/:id/comments', authMiddleware(), async (req, res) => {
   try {
     console.log('Received request body:', req.body);
     console.log('Received user ID from auth middleware:', req.userId);
@@ -730,7 +755,7 @@ app.post('/resorts/:id/comments', authMiddleware(), async (req, res) => {
 });
 
 // Fetch comments for a resort
-app.get('/resorts/:id/comments', async (req, res) => {
+app.get('/api/resorts/:id/comments', async (req, res) => {
   try {
     const resort = await Resort.findById(req.params.id).populate('comments.user', 'username profilePicture');
     if (!resort) {
@@ -745,7 +770,7 @@ app.get('/resorts/:id/comments', async (req, res) => {
 });
 
 // Fetch resorts for the logged-in owner
-app.get('/myresorts', authMiddleware(['user', 'admin']), async (req, res) => {
+app.get('/api/myresorts', authMiddleware(['user', 'admin']), async (req, res) => {
   try {
     const resorts = await Resort.find({ owner: req.userId }).populate('owner', 'username profilePicture');
     res.json(resorts);
@@ -757,7 +782,7 @@ app.get('/myresorts', authMiddleware(['user', 'admin']), async (req, res) => {
 
 
 // Update routes accordingly
-app.post('/resorts', authMiddleware(['admin , user']), async (req, res) => {
+app.post('/api/resorts', authMiddleware(['admin , user']), async (req, res) => {
   try {
     const { name, phone, location, locationLink, description, images, videos, photoBanner, minPrice, maxPrice, rating, available } = req.body;
     const sequence = await getNextSequence('resortId');
@@ -786,7 +811,7 @@ app.post('/resorts', authMiddleware(['admin , user']), async (req, res) => {
 });
 
 // Remove user profile picture
-app.delete('/users/:id/profile-picture', authMiddleware(['admin', 'user']), async (req, res) => {
+app.delete('/api/users/:id/profile-picture', authMiddleware(['admin', 'user']), async (req, res) => {
   try {
     if (req.params.id !== req.userId && req.userRole !== 'admin') {
       return res.status(403).json({ message: 'You are not authorized to perform this action.' });
@@ -808,7 +833,7 @@ app.delete('/users/:id/profile-picture', authMiddleware(['admin', 'user']), asyn
   }
 });
 
-app.delete('/users/:id', authMiddleware('admin'), async (req, res) => {
+app.delete('/api/users/:id', authMiddleware('admin'), async (req, res) => {
   try {
     const userId = req.params.id;
 
@@ -835,7 +860,7 @@ app.delete('/users/:id', authMiddleware('admin'), async (req, res) => {
 
 
 // Delete a resort
-app.delete('/resorts/:id', authMiddleware(['user', 'admin']), async (req, res) => {
+app.delete('/api/resorts/:id', authMiddleware(['user', 'admin']), async (req, res) => {
   try {
     const resort = req.userRole === 'admin'
       ? await Resort.findByIdAndDelete(req.params.id)
@@ -851,4 +876,7 @@ app.delete('/resorts/:id', authMiddleware(['user', 'admin']), async (req, res) =
   }
 });
 
-server.listen(5000, () => console.log('Server is running on port 5000'));
+
+
+server.listen(3000, () => console.log('Server is running on port 3000'));
+
